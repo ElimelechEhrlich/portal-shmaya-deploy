@@ -1264,7 +1264,12 @@
                   year: currentYear,
                   type: 'annual'
                 })
-              }).catch(function(e) {});
+              })
+              .then(function(r) { return r.json(); })
+              .then(function(res) {
+                if (res && res.ok && res.driveUrl) saveDriveFileUrl(file.name, res.driveUrl);
+              })
+              .catch(function(e) {});
             };
             reader.readAsDataURL(file);
           } catch(e) {}
@@ -1301,7 +1306,7 @@
               .then(function(r) { return r.json(); })
               .then(function(res) {
                 if (res && res.ok) {
-                  if (res.driveUrl) fileUrlsMap[file.name] = res.driveUrl;
+                  if (res.driveUrl) saveDriveFileUrl(file.name, res.driveUrl);
                   showToast('הקובץ הועלה בהצלחה ל-Google Drive! ☁️');
                 }
               })
@@ -1333,7 +1338,9 @@
 
     
     let activeFileUrl = null;
-    let fileUrlsMap = {
+    let storedDriveUrls = {};
+    try { storedDriveUrls = JSON.parse(localStorage.getItem('shemaya_drive_file_urls') || '{}'); } catch(e) {}
+    let fileUrlsMap = Object.assign({
   "17927001635854964749994349306827.jpg": "https://drive.google.com/file/d/1-u7i_FhaPXyUysZyQkDv2qEKAzC1Sjev/view?usp=drivesdk",
   "17926999135255514894437509635649.jpg": "https://drive.google.com/file/d/1wtH6h4YMYNYBmFp-NvZ-NRa9s9T-u--S/view?usp=drivesdk",
   "test_auto_sync_drive.pdf": "https://drive.google.com/file/d/1IMoTqZz4nhMwwNM0YIxC4r7eIHvO9x-z/view?usp=drivesdk",
@@ -1359,7 +1366,17 @@
   "חשבונית_מס_קבלה_1319001_261001_225201.pdf": "https://drive.google.com/file/d/1_EM-53c5rX0XNARUIa9-Lvj1DO6FAgoR/view?usp=drivesdk",
   "HashDoc_46_686269_261001_211741.pdf": "https://drive.google.com/file/d/1qHkL75xfcWyUiwn3PMLHqshcIiQutWKT/view?usp=drivesdk",
   "MainDocERP_DA15_2601764_261001_211711.pdf": "https://drive.google.com/file/d/15BirOnylEMxvoqXg3m-CH4gLULIsNwz_/view?usp=drivesdk"
-};
+}, storedDriveUrls);
+
+    function saveDriveFileUrl(name, url) {
+      if (!name || !url) return;
+      fileUrlsMap[name] = url;
+      try {
+        let m = JSON.parse(localStorage.getItem('shemaya_drive_file_urls') || '{}');
+        m[name] = url;
+        localStorage.setItem('shemaya_drive_file_urls', JSON.stringify(m));
+      } catch(e) {}
+    }
 
     
     let currentDocType = null;
@@ -1609,21 +1626,27 @@
       // Trigger automatic background move in Google Drive
       try {
         const dUrl = (typeof fileUrlsMap !== 'undefined' && fileUrlsMap[fileName]) ? fileUrlsMap[fileName] : '';
-        const match = dUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-          fetch('/api/move', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ctk_GSKNxMUUZkTw0t90tfCqPoYxFLSmZmh3Fbt-Q6xW49g'
-            },
-            body: JSON.stringify({
-              fileId: match[1],
-              targetMonth: targetMonth,
-              fromMonth: currentMonth
-            })
-          }).catch(function(e) { console.error('Drive endpoint error:', e); });
-        }
+        const match = dUrl ? dUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) : null;
+        const fileId = (match && match[1]) ? match[1] : null;
+
+        fetch('/api/move', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileId: fileId,
+            fileName: fileName,
+            clientName: currentClientName,
+            targetMonth: targetMonth,
+            fromMonth: currentMonth
+          })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+          if (res && res.ok && res.fileId) {
+            saveDriveFileUrl(fileName, 'https://drive.google.com/file/d/' + res.fileId + '/view?usp=drivesdk');
+          }
+        })
+        .catch(function(e) { console.error('Drive move error:', e); });
       } catch(e) {}
 
       saveData();
@@ -1665,21 +1688,27 @@
       // Trigger automatic background move in Google Drive to Annual folder
       try {
         const dUrl = (typeof fileUrlsMap !== 'undefined' && fileUrlsMap[fileName]) ? fileUrlsMap[fileName] : '';
-        const match = dUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-          fetch('/api/move', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ctk_GSKNxMUUZkTw0t90tfCqPoYxFLSmZmh3Fbt-Q6xW49g'
-            },
-            body: JSON.stringify({
-              fileId: match[1],
-              targetMonth: 'annual',
-              fromMonth: currentMonth
-            })
-          }).catch(function(e) { console.error('Drive endpoint error:', e); });
-        }
+        const match = dUrl ? dUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) : null;
+        const fileId = (match && match[1]) ? match[1] : null;
+
+        fetch('/api/move', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileId: fileId,
+            fileName: fileName,
+            clientName: currentClientName,
+            targetMonth: 'annual',
+            fromMonth: currentMonth
+          })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+          if (res && res.ok && res.fileId) {
+            saveDriveFileUrl(fileName, 'https://drive.google.com/file/d/' + res.fileId + '/view?usp=drivesdk');
+          }
+        })
+        .catch(function(e) { console.error('Drive move to annual error:', e); });
       } catch(e) {}
 
       saveData();

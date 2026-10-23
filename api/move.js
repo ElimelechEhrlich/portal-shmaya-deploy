@@ -1,8 +1,8 @@
 export default async function handler(req, res) {
-  // Enable CORS just in case
+  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -13,14 +13,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { fileId, targetMonth, fromMonth } = req.body;
+    const { fileId, fileName, clientName, targetMonth, fromMonth } = req.body;
     const response = await fetch('https://api.contreal.io/api/endpoints/ep_MuQGCX-pHFtK4GlO', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ctk_GSKNxMUUZkTw0t90tfCqPoYxFLSmZmh3Fbt-Q6xW49g'
       },
-      body: JSON.stringify({ fileId, targetMonth, fromMonth })
+      body: JSON.stringify({ action: 'move', fileId, fileName, clientName, targetMonth, fromMonth })
     });
     const data = await response.json();
     return res.status(200).json(data);
