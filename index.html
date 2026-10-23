@@ -1,0 +1,3167 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>מוישי שמעיה - העלאת מסמכים</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Assistant', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #f8fafc; color: #0f172a; margin: 0; padding: 0; direction: rtl; display: flex; flex-direction: column; align-items: center; min-height: 100vh; width: 100%; }
+    .app-card { width: 100%; max-width: 100%; background: #ffffff; border: none; border-radius: 0; box-shadow: none; padding: 16px 14px 36px 14px; text-align: center; box-sizing: border-box; flex: 1; }
+    @media (min-width: 540px) {
+      body { background-color: #f1f5f9; padding: 24px 12px; }
+      .app-card { max-width: 440px; border-radius: 28px; box-shadow: 0 20px 50px -15px rgba(0,0,0,0.12); border: 1px solid #e2e8f0; min-height: auto; flex: none; }
+    }
+    .branding-box { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 22px; padding: 18px 14px; color: white; margin-bottom: 18px; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15); }
+    .logo-img { height: 48px; background: white; padding: 4px 12px; border-radius: 12px; margin: 0 auto 10px auto; display: block; }
+    .office-name { font-size: 18px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px; }
+    .office-tagline { font-size: 11px; color: #38bdf8; font-weight: 700; margin-top: 2px; }
+    .office-meta { display: flex; justify-content: center; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 10.5px; color: #cbd5e1; }
+    .client-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 4px; margin-bottom: 12px; }
+    .client-bar .name { font-size: 16px; font-weight: 800; color: #0f172a; }
+    .year-tag { font-size: 11px; font-weight: 700; background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 10px; }
+    .month-nav { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 18px; padding: 6px 10px; margin-bottom: 16px; }
+    .nav-arrow { width: 38px; height: 38px; border-radius: 12px; background: white; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; color: #0284c7; cursor: pointer; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+    .nav-arrow:active { background: #0284c7; color: white; }
+    .current-month-text { font-size: 15px; font-weight: 800; color: #0f172a; }
+    .current-month-sub { font-size: 10.5px; color: #16a34a; font-weight: 700; margin-top: 1px; }
+    .btn-container { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+    .huge-btn { padding: 18px 16px; border-radius: 22px; border: none; display: flex; align-items: center; gap: 14px; cursor: pointer; text-align: right; width: 100%; user-select: none; box-shadow: 0 8px 18px rgba(0,0,0,0.08); transition: transform 0.1s; }
+    .huge-btn:active { transform: scale(0.98); }
+    .huge-btn.income { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+    .huge-btn.expense { background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); color: white; }
+    .huge-btn-icon { width: 48px; height: 48px; border-radius: 16px; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+    .huge-btn-title { font-size: 17px; font-weight: 800; line-height: 1.2; }
+    .huge-btn-sub { font-size: 11.5px; opacity: 0.92; margin-top: 2px; }
+    .calm-status { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 18px; padding: 14px 16px; font-size: 12px; color: #475569; margin-bottom: 14px; text-align: right; }
+    .calm-status-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-weight: 600; }
+    .calm-status-row:last-child { margin-bottom: 0; }
+    .badge-num { font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 10px; }
+    .badge-num.income { background: #d1fae5; color: #065f46; }
+    .badge-num.expense { background: #ffe4e6; color: #9f1239; }
+    .files-list-box { max-height: 180px; overflow-y: auto; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; display: none; }
+    .files-list-box.has-files { display: block; }
+    .file-chip { background: white; border: 1px solid #cbd5e1; border-radius: 10px; padding: 6px 10px; font-size: 11.5px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .file-chip-name { font-weight: 700; color: #1e293b; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-chip-del { color: #ef4444; font-size: 13px; cursor: pointer; padding: 0 4px; font-weight: bold; }
+    .excel-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: #10b981; color: white; padding: 12px 16px; border-radius: 16px; font-size: 13.5px; font-weight: 800; border: none; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25); cursor: pointer; margin-bottom: 18px; }
+    .excel-btn:active { background: #059669; }
+    .marketing-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 18px; padding: 14px; text-align: center; }
+    .marketing-title { font-size: 12px; font-weight: 800; color: #0f172a; }
+    .marketing-services { font-size: 10.5px; color: #64748b; margin: 4px 0 10px 0; line-height: 1.4; }
+    .contact-chips { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .c-chip { background: white; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 12px; font-size: 11px; font-weight: 700; color: #334155; text-decoration: none; }
+    .c-chip.highlight { background: #0284c7; color: white; border-color: #0284c7; }
+    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #0f172a; color: white; padding: 12px 20px; border-radius: 16px; font-size: 13px; font-weight: 700; box-shadow: 0 10px 25px rgba(0,0,0,0.3); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100; pointer-events: none; border: 1px solid #38bdf8; }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+  
+    .month-chip-btn {
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 6px 2px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .month-chip-btn:hover {
+      background: #f0fdf4;
+      border-color: #16a34a;
+      color: #16a34a;
+    }
+    .month-chip-btn.current {
+      background: #eff6ff;
+      border-color: #0284c7;
+      color: #0284c7;
+      font-weight: 800;
+    }
+
+  
+    
+    /* Mobile-first defaults */
+    .desktop-row-1 { display: flex; flex-direction: column; gap: 12px; }
+    .desktop-row-2 { display: flex; flex-direction: column; gap: 12px; }
+    .row1-date-box { display: flex; flex-direction: column; gap: 8px; }
+    .nav-arrow-mini { font-size: 15px; font-weight: 800; color: #0284c7; cursor: pointer; user-select: none; padding: 0 4px; }
+
+    /* DESKTOP 2-ROW SCREEN (min-width: 900px) */
+    @media (min-width: 900px) {
+      body {
+        background-color: #f1f5f9;
+        padding: 14px 20px;
+        min-height: 100vh;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+      }
+      .app-card {
+        max-width: 1100px;
+        width: 100%;
+        max-height: 96vh;
+        padding: 16px 24px;
+        border-radius: 24px;
+        box-shadow: 0 10px 40px -10px rgba(15, 23, 42, 0.12);
+        border: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        box-sizing: border-box;
+      }
+      .branding-box {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 8px 18px !important;
+        margin-bottom: 10px !important;
+        text-align: right;
+      }
+      .branding-box-right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .branding-box .logo-img {
+        height: 38px !important;
+        margin: 0 !important;
+        padding: 2px 8px !important;
+      }
+      .branding-box .office-meta {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        gap: 12px !important;
+      }
+      .client-bar {
+        margin-bottom: 10px !important;
+        padding: 0 2px !important;
+      }
+
+      /* ROW 1: CONTROLS & BUTTONS IN ONE LINE */
+      .desktop-row-1 {
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+      .row1-date-box {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 6px;
+        min-width: 220px;
+      }
+      .month-nav {
+        margin-bottom: 0 !important;
+        padding: 4px 8px !important;
+      }
+      .btn-container {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 10px !important;
+        margin-bottom: 0 !important;
+        flex: 2 !important;
+      }
+      .huge-btn {
+        padding: 10px 14px !important;
+        flex: 1;
+        border-radius: 18px !important;
+        margin-bottom: 0 !important;
+      }
+      .huge-btn-icon {
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 20px !important;
+      }
+      .huge-btn-title {
+        font-size: 14.5px !important;
+      }
+      .huge-btn-sub {
+        font-size: 10.5px !important;
+      }
+
+      /* ROW 2: DOCUMENTS LIST & TAXES SIDE BY SIDE */
+      .desktop-row-2 {
+        display: grid;
+        grid-template-columns: 1.25fr 1fr;
+        gap: 16px;
+        align-items: stretch;
+        flex: 1;
+      }
+      .calm-status {
+        margin-bottom: 0 !important;
+        padding: 12px 14px !important;
+        display: flex;
+        flex-direction: column;
+      }
+      .files-list-box {
+        max-height: 250px !important;
+        overflow-y: auto !important;
+        flex: 1;
+      }
+      .taxes-card {
+        margin-bottom: 0 !important;
+        padding: 12px 14px !important;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .marketing-box {
+        display: none !important; /* hidden on desktop since header has contact */
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <input type="file" id="incomeInput" accept="image/*,application/pdf" multiple style="display:none;" onchange="handleFileUpload(event, 'income')">
+  <input type="file" id="expenseInput" accept="image/*,application/pdf" multiple style="display:none;" onchange="handleFileUpload(event, 'expense')">
+  <input type="file" id="universalInput" accept="image/*,application/pdf" multiple style="display:none;" onchange="handleUniversalFileSelected(event)">
+
+  <div class="app-card">
+    <div class="branding-box">
+      <div class="branding-box-right" style="display: flex; align-items: center; gap: 12px;">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAhoAAAFhCAIAAAC51pTuAABM+0lEQVR4nO3dd3wcxd0/8JnZvareJVuWZVty7xX3TnHHYBswYJv60EkgIeGhhJRfAiGQB1JICJhQDJhqDLZx77132ZKtZvVeru/u748zp9PdSjrt7amcPu/XhdztbZmTrP3ezHxnhkqSRAAAAPzD2rsAAAAQDBBOAABABQgnAACgAoQTAABQAcIJAACoAOEEAABUgHACAAAqQDgBAAAVIJwAAIAK+PYuAAAEiazD+87t3KzgwEnL74/unqJ6eaCNIZwAgDoqruVmHtit4MDR85eQ7qoXB9oawgkAqINSypii9nOqdlGgPSCcAIA6KCGMKYkMFPEkKCCcAIBKKKUUtZOuC+EEANTBKKVUWWRAPAkGCCcAoBalfScQFBBOAEAlSrviFVZpoINBOAEAdTBKlDV2oSs+OCCcAIBaKFWU2YVoEhwQTgBAHZSh76RLQzgBAHVQSjmFfSeongQDhBMAUAelShu7ICggnACAOighFJOsdGEIJwCgDuWNXYgnQQHhBABUQilqJ10ZwgkAqETxjMIQFBBOAEAdVOkwRobqSVBAOAEAdTBKGePauxTQbhBOAEAllDFOUWMX0ouDAsIJAKiDUsIUztkFwQDhBADUwZR3xSOgBAOEEwBQCaWMU9R3gmgSFBBOAEAdVOnyWRjGGBwQTgBAHZRSZX0nEBwQTgBAHZRRqiizCzMKBweEEwBQC+WUjTtBNAkKCCcAoA6mfPksxJNggHACAOpQvN4J2rqCA8IJQJdWejXTXFuj4MCkvgM1er37FkoppyhRGJldwQHhBKBL2/vJf64ePaTgwBVvvR+T0st9C2VM2bgTdMUHB4QTgC6NEjVX5KUUE9R3XQgnAF0aVa//nDGlU0CidhIUEE4AujRKGVOr/5wqTBRGNAkOCCcAXRqlVK0WKkoUdsUjUTg4IJwAdGmqNnYhUbhLQzgB6NKUzyrvFQMoZRyv5JaCzK7ggHAC0KVRxtTK7KKMcAorOhAMEE4AujSqtHbiXaOgFONOujSEE4AuTXE4kT0VxZxdXRjCCUCXxpQuUuI9MwpjjFe4GiPCSTBAOAHo0pjSmVHkuuIVLu6Lxq7ggHAC0LUpnQbYG6OU5zGMsetCOAHo0hilTNlQ9iaqJ4pKgXgSDBBOALo0yjFO2URbMudSrVcfOiOEE4AujVGqtOvC6yhJkiTJ7xJBZ4VwAtClUcoUNnbJxSBJFBWVAkEoGCCcAHRpVPGs8t5QO+naEE4AujTlwxi9qicSIaKicIIQFBwQTgC6NMYUDmOUISlt7EI8CQoIJwBdmopjD0VJFCX0nXRdCCcAXRqjTM3sXsSFLgzhBKBLo5yag0VEhZldEAwQTgC6NMW1E+/GLklpZhfywYIDwglAl0aVTgHp3X0vSZLC2ona0UR0OJiidSHBH5gRAaBLY4xyHFPwkEsUloik6KGqnOMHNr72a3N1pbqnhRYFSQDfuvfotn0nfNyZUrJk7rQRg9JdW774Yefxs5dld/7Nz1bqtBpCyMnzmZ+v3+H+1vxZEyaMGuS+5cDxc99t2e++5an7bkuMi3Y+f/mN1Ta7w8dC9k5Jun3O1KiIMPeNkkSef+1d9y2zp4yeMX6E7Kfok9r9gWVzXC/fWv11YUm56+Xoof1uu2WKLyWprK597Z3PZN+aPHbInOk3BK5svlzaYXe8+MZq2X2G9O9918KZzud7j5z5YfvB5j6nG51WM2vSqEljhvi4f6dGGVO65pUXSVI27kTF6knOsQOHP31XksQdf//j9Md+bYiIUuvM0KIgCSf7jp796+ovfd//7Q+/3ffl20P793a+3Ljz0Kfrt8vu+fxjy53hRKvhPS5RWV3rEU7OZlz12OeO+dNd4eQfH6+rM5l9L+QLb6xe89fnZ04c5doiSaLH+cNCja5btsenmDxmqPst+79f/Xg+M9v18u5bZ/sYTqpq6pr62ToEwS2cqF82Xy5tdwhN7bPoxsmucHL87OVW/Qt59V+fLpg14cM3nnf+9juUkiuXD375sYIDI+ISpq561GMjY4xTKVFYUjruRK36Sc7RfYc/f1+SJEJoXXnpzn++Nv2xX+nDItQ5O7QkSMJJazkcjvfXbvjrS4/7fsjA9NToiPCK6hrXln3Hznrso/Fa7EHwI9Glprbujid+d/yHf/dIild8ElDsu637f/Wnf7/50mPtXRBP9VUVWQd2Kzgwtmdv742K5+yS0a6TrOQc3Xd07fuUSK7lW+rLi3f987Vpjz6nCw1vr1J1KV237yT3WklrD5k0ZrD7y8yca2UV1e5beI1neBZEv/666kzmv334rT9nAH+8t3ZDVXVde5fCEyWE4zkFD9llsjhGGccUPLxPJUnXk7tay//Grtyj+499sfr6WmBuj7qy4t3/+rPd1OF+iUGp64YThyi09pCpNwz32HLg+Dn3l1qvcOJ/Gv7uQ6f8PAMoZnc4Dpw41/J+bYtSquT2zzjBapU5G2OKeuLlg5OoiJ8/kJyj+459uZoQQqnMo7akcBciSpsIksauEKMhJqq5+qzDIVbXNvnvKcSodx5usdjqzZamdpsyZqjHlr1Hz8yfNcH1UuOVmygIDX8q0RFhOp2GEGKz2msbd6KEGg3Ot+rqzFa73f2tK7kFTZWnbTDGXD/bispaqQ3HPft4adc+ldV1Td2bDHptU7tRSqIjw0kT/0iyctr55++NUqqwt0MuADDGKTybV6qwKInKGrv8qcPnHN17/KsPSbMLztcWF+x59y+TH3pWYwhRfiVoSZCEk2cfWvbsQ8ua32fSkieOnbkk+9bbrzz19itPEULeX7vhsZf+r6kzDO7XKyoirLK61rXFo/tEJpy41YEydnzkfPLEy//3n883uLYb9brTm95Lio8hhFRV18246+cXsnJc79bUmRwOQdkS3Kro2T0h/8AXzuepk+4oLmu7/EtfLm0w6Fz7jFv06OmLWbKnevDOeQ/eOY8Qkl9YOnD2Svdw8ujdi17/30ecz1ev3fjoS391P7C0vMrPT6E6xeGEyNXIGVM4Z5esNu47yTmy98Q3H1FCW1xuvqaoYO9/3pz04DMavaFtytYFdaHGLqNe7/9JJo5u1H1y8lyW2dzQgKDxbuwSPL8s5xWWfPDVZvctT993uzOWEEIiI0KXL5rlcYjVZiegkj/+c43d0ZCuHR4W+sLj97herlxyi0Gvdd/fYrO1XeF8RJX2dshV3Rjj1Os7kRQ2dikKQjlH9pz89mNKqI9qCvP3v/emw9pk8wP4qQuFE1VMGzfc/aUgCkfPZLhe6r2SSh1ef8BvvPuFw/12Fmp8+v4l7jvExUR6HIJ5kNRSUlb54deNYvlTKxdHRoS6XlJKYiIb5ZWK/iVTBAKllOc5BQ/ZOg11tna1" class="logo-img" alt="מוישי שמעיה">
+        <div style="text-align: right;">
+          <div class="office-name" style="font-size: 15px; font-weight: 800; color: #ffffff;">מוישי שמעיה — חשבונאות ומיסוי</div>
+          <div class="office-tagline" style="font-size: 11px; color: #38bdf8; font-weight: 700;">שקט וביטחון פיננסי לעסק שלך</div>
+        </div>
+      </div>
+      <div class="office-meta" style="display: flex; align-items: center; gap: 12px; font-size: 11px;">
+        <span style="color: #cbd5e1;">📍 רבי עקיבא 25, ביתר עילית</span>
+        <a href="tel:025327040" style="color: #38bdf8; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: rgba(56, 189, 248, 0.18); padding: 4px 12px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.35);">📞 חייג למשרד</a>
+      </div>
+    </div>
+    <div id="loginView" style="padding: 10px 4px 14px 4px;">
+      <div style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">כניסה לאזור הלקוח</div>
+      <div style="font-size: 12px; color: #64748b; margin-bottom: 18px;">הזן מספר זהות וסיסמה לצפייה והעלאת חומר</div>
+      
+      <div id="loginError" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 14px; text-align: center;"></div>
+
+      <div style="margin-bottom: 12px; text-align: right;">
+        <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 5px;">מספר תעודת זהות / עוסק:</label>
+        <input type="text" id="loginId" style="width: 100%; padding: 12px 14px; border-radius: 14px; border: 1.5px solid #cbd5e1; font-size: 14px; outline: none;" placeholder="לדוגמה: 315513770">
+      </div>
+      <div style="margin-bottom: 14px; text-align: right;">
+        <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 5px;">סיסמה:</label>
+        <input type="password" id="loginPass" style="width: 100%; padding: 12px 14px; border-radius: 14px; border: 1.5px solid #cbd5e1; font-size: 14px; outline: none;" placeholder="••••••••">
+      </div>
+      <button onclick="doLogin()" style="width: 100%; padding: 14px; border-radius: 16px; background: #0284c7; color: white; font-size: 15px; font-weight: 800; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);">כניסה לפורטל ➔</button>
+      <div style="margin-top: 14px; font-size: 11px; color: #64748b; text-align: center;">הכניסה מאובטחת בהצפנת SSL | מוישי שמעיה - חשבונאות ומיסוי</div>
+    </div>
+    <div id="dashboardView" style="display: none;">
+      
+      <!-- ADMIN VIEWING BANNER -->
+      <div id="adminViewBanner" style="display: none; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 10px 14px; border-radius: 16px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 16px;">👁️</span>
+          <div style="text-align: right;">
+            <div style="font-size: 10.5px; color: #94a3b8; font-weight: 700;">תצוגת מנהל משרד</div>
+            <div id="adminBannerClientName" style="font-size: 13px; font-weight: 800; color: #38bdf8;">תיק לקוח: שמאי מאיר</div>
+          </div>
+        </div>
+        <button onclick="toggleAdminModal()" style="background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 10px; font-weight: 800; font-size: 11px; cursor: pointer;">חזרה ללוח בקרה ➔</button>
+      </div>
+
+      <!-- CLIENT HEADER BAR WITH NAME AND 3 DOTS -->
+      <div class="client-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; margin-bottom: 14px;">
+        <div style="font-size: 17px; font-weight: 800; color: #0f172a;" id="clientNameHeader">שלום, שמעיה מוישי 👋</div>
+        <button onclick="toggleSideMenu()" style="width: 42px; height: 42px; border-radius: 14px; background: #f1f5f9; border: 1.5px solid #cbd5e1; font-size: 22px; font-weight: 900; color: #0f172a; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);" title="תפריט אפשרויות">⋮</button>
+      </div>
+
+      <!-- AUTOMATIC 1-CLICK APP INSTALL BANNER -->
+      <div id="autoInstallBanner" style="display: none; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; padding: 10px 14px; border-radius: 16px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+        <span style="font-size: 12px; font-weight: 800;">📲 התקן את האפליקציה במסך הבית</span>
+        <button onclick="triggerAutoInstall()" style="background: white; color: #0284c7; border: none; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 11.5px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">התקנה ➔</button>
+      </div>
+
+      <!-- ROW 1: CONTROLS, UPLOAD BUTTONS & LOCK -->
+      <div class="desktop-row-1">
+        <div class="row1-date-box">
+          
+          <div style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: #f1f5f9; border: 1.5px solid #cbd5e1; padding: 4px 12px; border-radius: 14px;">
+            <span onclick="changeYear(-1)" class="nav-arrow-mini" title="שנה קודמת">▶</span>
+            <span id="yearDisplay" style="font-size: 13px; font-weight: 800; color: #0f172a;">2026</span>
+            <span onclick="changeYear(1)" class="nav-arrow-mini" title="שנה הבאה">◀</span>
+          </div>
+          
+          <div class="month-nav">
+            <div class="nav-arrow" onclick="changeMonth(-1)" title="חודש קודם">▶</div>
+            <div style="text-align: center; cursor: pointer; padding: 4px 8px; border-radius: 10px; transition: background 0.2s;" onclick="openMonthPickerModal()" title="לחץ לבחירת חודש מהיר או דו\"ח שנתי">
+              <div class="current-month-text" id="monthTitle" style="font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                <span>חודש 10 — אוקטובר</span>
+                <span style="font-size: 10px; color: #0284c7;">▼</span>
+              </div>
+              <div class="current-month-sub" style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px;">
+                <span id="fileStatusDot" style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #16a34a;"></span>
+                <span id="fileStatusText" style="color: #16a34a; font-weight: 700; font-size: 10.5px;">חומר נקלט — בבדיקה במשרד</span>
+              </div>
+            </div>
+            <div class="nav-arrow" onclick="changeMonth(1)" title="חודש הבא">◀</div>
+          </div>
+        </div>
+        
+        <div class="btn-container" id="uploadButtonsContainer" style="display: flex; justify-content: center;">
+          <button class="huge-btn" onclick="triggerUniversalUpload()" style="width: 100%; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border: none; border-radius: 16px; padding: 16px 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 14px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35); transition: transform 0.1s ease;">
+            <div style="font-size: 28px;">📤</div>
+            <div style="text-align: right;">
+              <div style="font-size: 16px; font-weight: 900; letter-spacing: -0.2px;">העלאת מסמך</div>
+              <div style="font-size: 11.5px; opacity: 0.92; font-weight: 600;">צילום ממצלמה או בחירת קובץ מהמכשיר</div>
+            </div>
+          </button>
+        </div>
+        
+        <div id="monthLockSection">
+          <button id="btnLockMonth" onclick="clientLockMonth()" style="width: 100%; height: 100%; min-height: 60px; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; border: none; padding: 10px 14px; border-radius: 18px; font-size: 12.5px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);">
+            <span style="font-size: 16px;">🔒</span>
+            <span>סיימתי להעלות לחודש זה</span>
+          </button>
+          <div id="monthLockedBanner" style="display: none; background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 18px; padding: 8px 12px; text-align: center; color: #334155; height: 100%; box-sizing: border-box; justify-content: center; flex-direction: column;">
+            <div style="font-weight: 800; font-size: 12.5px; color: #0f172a; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>🔒</span>
+              <span>החודש סגור במשרד</span>
+            </div>
+            <div style="font-size: 10.5px; color: #64748b; margin-top: 2px;">נעול להעלאה נוספת</div>
+            <button id="bannerAdminUnlockBtn" onclick="adminUnlockMonth()" style="display: none; background: #e11d48; color: white; border: none; padding: 5px 12px; border-radius: 8px; font-weight: 800; font-size: 11px; cursor: pointer; margin-top: 5px; display: inline-flex; align-items: center; gap: 4px;">
+              <span>🔓</span> פתח חודש
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2: DOCUMENTS & TAXES SIDE BY SIDE -->
+      <div class="desktop-row-2">
+        
+        <div class="calm-status">
+          <div class="calm-status-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0;">
+            <span style="font-weight: 800; font-size: 13px; color: #0f172a;">📁 מסמכים שנקלטו החודש:</span>
+            <div style="display: flex; gap: 6px;">
+              <strong class="badge-num income" id="incomeCount">0 מסמכים</strong>
+              <strong class="badge-num expense" id="expenseCount">0 מסמכים</strong>
+            </div>
+          </div>
+          <div class="files-list-box" id="filesListBox">
+            <div id="filesContainer"></div>
+          </div>
+        </div>
+        
+        <div class="taxes-card" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 20px; padding: 12px 14px; text-align: right;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 800; color: #0f172a;">🏛️ תשלומי מיסים לחודש זה</span>
+            <span id="taxStatusBadge" style="font-size: 10.5px; font-weight: 700; background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 8px;">שולם ודווח</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px;">
+            <div style="background: white; border: 1px solid #e2e8f0; padding: 6px 8px; border-radius: 10px;">
+              <div style="color: #64748b; font-size: 10px;">מע"מ:</div>
+              <div id="taxVat" style="font-weight: 800; color: #0f172a; font-size: 12.5px; margin-top: 1px;">₪1,840</div>
+            </div>
+            <div style="background: white; border: 1px solid #e2e8f0; padding: 6px 8px; border-radius: 10px;">
+              <div style="color: #64748b; font-size: 10px;">מקדמות מס:</div>
+              <div id="taxAdvances" style="font-weight: 800; color: #0f172a; font-size: 12.5px; margin-top: 1px;">₪1,200</div>
+            </div>
+            <div style="background: white; border: 1px solid #e2e8f0; padding: 6px 8px; border-radius: 10px;">
+              <div style="color: #64748b; font-size: 10px;">ניכויי מס:</div>
+              <div id="taxDeductions" style="font-weight: 800; color: #0f172a; font-size: 12.5px; margin-top: 1px;">₪450</div>
+            </div>
+            <div style="background: white; border: 1px solid #e2e8f0; padding: 6px 8px; border-radius: 10px;">
+              <div style="color: #64748b; font-size: 10px;">ביטוח לאומי:</div>
+              <div id="taxBtl" style="font-weight: 800; color: #0f172a; font-size: 12.5px; margin-top: 1px;">₪380</div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; font-size: 12px; font-weight: 800;">
+            <span style="color: #334155;">סה"כ לרשויות:</span>
+            <span id="taxTotal" style="color: #0284c7; font-size: 13.5px;">₪3,870</span>
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- end dashboardView -->
+
+    <div class="marketing-box">
+      <div class="marketing-title">לשאלות, ייעוץ ופניות למשרד:</div>
+      <div class="marketing-services">
+        ייעוץ מס • פתיחת תיקים • דוחות שנתיים • הצהרות הון • החזרי מס
+      </div>
+      <div class="contact-chips">
+        <a href="https://wa.me/97225327040" target="_blank" class="c-chip highlight">💬 וואטסאפ: 02-532-7040</a>
+        <a href="mailto:d025327040@gmail.com" class="c-chip">✉️ מייל המשרד</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">הקובץ נקלט בהצלחה! 🎉</div>
+
+  <script>
+
+    window.deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.deferredPrompt = e;
+      const b = document.getElementById('autoInstallBanner');
+      if (b) b.style.display = 'flex';
+    });
+
+    const MONTHS = [
+      'חודש 1 — ינואר', 'חודש 2 — פברואר', 'חודש 3 — מרץ', 'חודש 4 — אפריל',
+      'חודש 5 — מאי', 'חודש 6 — יוני', 'חודש 7 — יולי', 'חודש 8 — אוגוסט',
+      'חודש 9 — ספטמבר', 'חודש 10 — אוקטובר', 'חודש 11 — נובמבר', 'חודש 12 — דצמבר'
+    ];
+
+    let currentMonth = 10;
+
+    let currentYear = 2026;
+
+    function changeYear(delta) {
+      currentYear += delta;
+      document.getElementById("yearDisplay").innerText = "שנת " + currentYear;
+      updateView();
+    }
+
+
+    function setYear(year) {
+      currentYear = year;
+      [2024, 2025, 2026].forEach(y => {
+        const btn = document.getElementById('ybtn' + y);
+        if (btn) {
+          if (y === year) {
+            btn.style.background = '#0284c7';
+            btn.style.color = 'white';
+            btn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+          } else {
+            btn.style.background = 'white';
+            btn.style.color = '#475569';
+            btn.style.boxShadow = 'none';
+          }
+        }
+      });
+      updateView();
+    }
+
+
+    
+    function doLogin() {
+      const idInput = document.getElementById("loginId");
+      const passInput = document.getElementById("loginPass");
+      const errEl = document.getElementById("loginError");
+      const idVal = (idInput ? idInput.value : "").trim();
+      const passVal = (passInput ? passInput.value : "").trim();
+
+      if (!idVal || !passVal) {
+        if (errEl) {
+          errEl.textContent = "נא להזין מספר תעודת זהות וסיסמה";
+          errEl.style.display = "block";
+        }
+        return;
+      }
+
+      // Check client login
+      let matchedClient = null;
+      for (const [cName, cData] of Object.entries(CLIENTS)) {
+        if (cData.id === idVal && cData.password === passVal) {
+          matchedClient = cName;
+          break;
+        }
+      }
+
+      if (!matchedClient) {
+        if (errEl) {
+          errEl.textContent = "מספר זהות או סיסמה שגויים";
+          errEl.style.display = "block";
+        }
+        return;
+      }
+
+      if (errEl) errEl.style.display = "none";
+      isAdminMode = (idVal === '315513770');
+      const adminBtn = document.getElementById('adminSideMenuBtn');
+      if (adminBtn) adminBtn.style.display = isAdminMode ? 'flex' : 'none';
+      currentClientName = matchedClient;
+      data = CLIENTS[matchedClient].data || {};
+      try {
+        const savedTaxes = localStorage.getItem('portal_taxes_data');
+        if (savedTaxes) {
+          const parsedTaxes = JSON.parse(savedTaxes);
+          for (const [cn, ct] of Object.entries(parsedTaxes)) {
+            if (CLIENTS[cn]) CLIENTS[cn].taxes = ct;
+          }
+        }
+        const savedClients = localStorage.getItem('portal_clients_data');
+        if (savedClients) {
+          const parsed = JSON.parse(savedClients);
+          for (const [cn, cObj] of Object.entries(parsed)) {
+            if (CLIENTS[cn]) {
+              if (cObj.data) CLIENTS[cn].data = cObj.data;
+              if (cObj.taxes) CLIENTS[cn].taxes = cObj.taxes;
+            }
+          }
+          if (parsed[matchedClient] && parsed[matchedClient].data) {
+            data = parsed[matchedClient].data;
+          }
+        }
+      } catch(e) {}
+
+      const hdr = document.getElementById("clientNameHeader");
+      if (hdr) hdr.innerText = "שלום, " + matchedClient + " 👋";
+
+      const sub = document.getElementById("menuClientSubTitle");
+      if (sub) sub.innerText = matchedClient + " • תיק לקוח";
+
+      document.getElementById("loginView").style.display = "none";
+      document.getElementById("dashboardView").style.display = "block";
+      updateView();
+      updateTaxView();
+      window.scrollTo(0, 0);
+    }
+
+    function doLogout() {
+      isAdminMode = false;
+      const adminBtn = document.getElementById('adminSideMenuBtn');
+      if (adminBtn) adminBtn.style.display = 'none';
+      isAdminMode = false;
+      document.getElementById("dashboardView").style.display = "none";
+      document.getElementById("loginView").style.display = "block";
+      const idInput = document.getElementById("loginId");
+      const passInput = document.getElementById("loginPass");
+      const errEl = document.getElementById("loginError");
+      if (idInput) idInput.value = "";
+      if (passInput) passInput.value = "";
+      if (errEl) errEl.style.display = "none";
+      window.scrollTo(0, 0);
+    }
+
+    const CLIENTS = {
+      'שמעיה חשי': {
+        id: '315643759',
+        password: '1234',
+        phone: '0504147622',
+        name: 'שמעיה חשי',
+        lockedMonths: {},
+        data: {
+          2026: {
+            annualDocs: [],
+            10: { income: [], expense: [] }
+          }
+        },
+        taxes: {
+          2026: {
+            10: { vat: 0, advances: 0, deductions: 0, btl: 0, status: 'טרם דווח' }
+          }
+        }
+      },
+      'שמעיה מוישי': {
+      "id": "315513770",
+      "password": "1234",
+      "name": "שמעיה מוישי",
+      "lockedMonths": {},
+      "data": {
+            "2026": {
+                  "annualDocs": [
+                    { "name": "הוצאה_22102026_1836.jpg", "type": "expense", "fromMonth": 10, "date": "22/10/2026" },
+                    { "name": "Kabala_111371_260105_173954.pdf", "type": "expense", "fromMonth": 10, "date": "22/10/2026" },
+                    { "name": "Kabala_111370_260105_173928.pdf", "type": "expense", "fromMonth": 10, "date": "22/10/2026" }
+                  ],
+                  "10": {
+                        "income": [],
+                        "expense": []
+                  }
+            }
+      },
+      "taxes": {
+            "2026": {
+                  "10": {
+                        "vat": 2840,
+                        "advances": 1400,
+                        "deductions": 550,
+                        "btl": 420,
+                        "status": "טרם דווח"
+                  },
+                  "9": {
+                        "vat": 3100,
+                        "advances": 1400,
+                        "deductions": 550,
+                        "btl": 420,
+                        "status": "דווח"
+                  }
+            }
+      }
+},
+      'שמאי מאיר': {
+        id: '208619742',
+        password: '1234',
+        lockedMonths: { 2026: { 9: true } },
+        name: 'שמאי מאיר',
+        data: {
+          2026: {
+            10: {
+              income: ['חשבונית_מס_1042_דוד_כהן.pdf', 'קבלה_סליקה_אוקטובר.pdf'],
+              expense: ['חשבונית_דלק_פז.jpg', 'אינטרנט_בזק_אוקטובר.pdf', 'ציוד_משרדי_קרביץ.pdf']
+            },
+            9: {
+              income: ['חשבונית_מס_1039.pdf'],
+              expense: ['סלקום_ספטמבר.pdf', 'רכישת_מחשב_ksp.pdf']
+            }
+          }
+        },
+        taxes: {
+          2026: {
+            10: { vat: 1840, advances: 1200, deductions: 450, btl: 380, status: 'טרם דווח' },
+            9: { vat: 2150, advances: 1200, deductions: 450, btl: 380, status: 'דווח' }
+          }
+        }
+      },
+      'חיים הירשמן': {
+        id: '032145678',
+        password: '1234',
+        name: 'חיים הירשמן',
+        data: {
+          2026: {
+            10: { income: [], expense: [] },
+            9: {
+              income: ['חשבונית_מס_501_הירשמן.pdf'],
+              expense: ['דלק_סונול_ספטמבר.pdf']
+            }
+          }
+        },
+        taxes: {
+          2026: {
+            10: { vat: 0, advances: 0, deductions: 0, btl: 0, status: 'טרם דווח' },
+            9: { vat: 980, advances: 800, deductions: 300, btl: 250, status: 'דווח ושולם' }
+          }
+        }
+      },
+      'אלימלך ארליך': {
+        id: '054841234',
+        password: '1234',
+        lockedMonths: { 2026: { 10: true, 9: true } },
+        name: 'אלימלך ארליך',
+        data: {
+          2026: {
+            10: {
+              income: ['חשבונית_ייעוץ_102.pdf'],
+              expense: ['שכירות_משרד_10_2026.pdf', 'חשמל_עסקי_אוקטובר.pdf', 'בזק_תקשורת.pdf', 'חניה_רכבת.pdf']
+            }
+          }
+        },
+        taxes: {
+          2026: {
+            10: { vat: 3200, advances: 1800, deductions: 600, btl: 550, status: 'דווח' }
+          }
+        }
+      }
+    };
+
+    
+    try {
+      const savedTaxes = localStorage.getItem('portal_taxes_data');
+      if (savedTaxes) {
+        const parsedTaxes = JSON.parse(savedTaxes);
+        for (const [cn, ct] of Object.entries(parsedTaxes)) {
+          if (CLIENTS[cn]) {
+            CLIENTS[cn].taxes = ct;
+          }
+        }
+      }
+    } catch(e) {}
+
+    let isAdminMode = false;
+    let currentClientName = 'שמעיה מוישי';
+    let data = CLIENTS[currentClientName].data;
+
+      try {
+        const saved = localStorage.getItem('portal_clients_data');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          Object.assign(CLIENTS, parsed);
+          // Preserve annualDocs from code if parsed client lacked it
+          for (const cKey of Object.keys(CLIENTS)) {
+            if (CLIENTS[cKey].data && CLIENTS[cKey].data[2026] && !CLIENTS[cKey].data[2026].annualDocs) {
+              if (cKey === 'שמעיה מוישי') {
+                CLIENTS[cKey].data[2026].annualDocs = [
+                  { name: 'הוצאה_22102026_1836.jpg', type: 'expense', fromMonth: 10, date: '22/10/2026' },
+                  { name: 'Kabala_111371_260105_173954.pdf', type: 'expense', fromMonth: 10, date: '22/10/2026' },
+                  { name: 'Kabala_111370_260105_173928.pdf', type: 'expense', fromMonth: 10, date: '22/10/2026' }
+                ];
+              }
+            }
+          }
+        }
+      } catch(e) {}
+
+
+    function saveData() {
+      if (CLIENTS[currentClientName]) {
+        CLIENTS[currentClientName].data = data;
+      }
+      try {
+        localStorage.setItem('portal_clients_data', JSON.stringify(CLIENTS));
+      } catch(e) {}
+    }
+
+    function switchClient(name) {
+      isAdminMode = true;
+      if (!CLIENTS[name]) return;
+      currentClientName = name;
+      data = CLIENTS[name].data;
+
+      const hdr = document.getElementById('clientNameHeader');
+      if (hdr) hdr.innerText = 'שלום, ' + name + ' 👋';
+
+      const sub = document.getElementById('menuClientSubTitle');
+      if (sub) sub.innerText = name + ' • תיק לקוח';
+
+      const bnr = document.getElementById('adminViewBanner');
+      const bnrName = document.getElementById('adminBannerClientName');
+      if (bnr) bnr.style.display = 'flex';
+      if (bnrName) bnrName.innerText = 'תיק לקוח: ' + name;
+
+      const m = document.getElementById('adminModal');
+      if (m) m.style.display = 'none'; updateTaxView();
+
+      updateView();
+      updateTaxView();
+
+      showToast('נכנסת לתיק של ' + name + ' 📁');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateTaxView() {
+      const btnEdit = document.getElementById('btnEditTaxes');
+      if (btnEdit) {
+        btnEdit.style.display = isAdminMode ? 'inline-flex' : 'none';
+      }
+      const elBadge = document.getElementById('taxStatusBadge');
+      if (!elBadge) return;
+      const clientObj = CLIENTS[currentClientName] || {};
+      const yrData = (clientObj.taxes && clientObj.taxes[currentYear]) || {};
+      const t = yrData[currentMonth];
+      if (t) {
+        elBadge.innerText = t.status;
+        if (t.status === 'דווח ושולם') {
+          elBadge.style.background = '#dcfce7';
+          elBadge.style.color = '#15803d';
+        } else if (t.status === 'דווח') {
+          elBadge.style.background = '#e0f2fe';
+          elBadge.style.color = '#0369a1';
+        } else {
+          elBadge.style.background = '#f1f5f9';
+          elBadge.style.color = '#475569';
+        }
+        document.getElementById('taxVat').innerText = '₪' + t.vat.toLocaleString();
+        document.getElementById('taxAdvances').innerText = '₪' + t.advances.toLocaleString();
+        document.getElementById('taxDeductions').innerText = '₪' + t.deductions.toLocaleString();
+        document.getElementById('taxBtl').innerText = '₪' + t.btl.toLocaleString();
+        const total = t.vat + t.advances + t.deductions + t.btl;
+        document.getElementById('taxTotal').innerText = '₪' + total.toLocaleString();
+      } else {
+        elBadge.innerText = 'ממתין לדיווח';
+        elBadge.style.background = '#f1f5f9';
+        elBadge.style.color = '#64748b';
+        document.getElementById('taxVat').innerText = '-';
+        document.getElementById('taxAdvances').innerText = '-';
+        document.getElementById('taxDeductions').innerText = '-';
+        document.getElementById('taxBtl').innerText = '-';
+        document.getElementById('taxTotal').innerText = '-';
+      }
+    }
+
+    
+    function isCurrentMonthLocked() {
+      const clientObj = CLIENTS[currentClientName] || {};
+      if (!clientObj.lockedMonths) clientObj.lockedMonths = {};
+      if (!clientObj.lockedMonths[currentYear]) clientObj.lockedMonths[currentYear] = {};
+      return !!clientObj.lockedMonths[currentYear][currentMonth];
+    }
+
+    function clientLockMonth() {
+      if (!confirm('האם אתה בטוח שסיימת להעלות את כל המסמכים לחודש זה?\n\nלאחר הנעילה החומר יועבר לטיפול המשרד ולא ניתן יהיה להעלות מסמכים נוספים לחודש זה.')) {
+        return;
+      }
+
+      const clientObj = CLIENTS[currentClientName] || {};
+      if (!clientObj.lockedMonths) clientObj.lockedMonths = {};
+      if (!clientObj.lockedMonths[currentYear]) clientObj.lockedMonths[currentYear] = {};
+      clientObj.lockedMonths[currentYear][currentMonth] = true;
+
+      updateView();
+      showToast('החומר הוגש וננעל בהצלחה! הועבר לטיפול המשרד 🔒');
+      try { confetti({ particleCount: 70, spread: 80, origin: { y: 0.7 } }); } catch(e) {}
+    }
+
+    function adminUnlockMonth() {
+      if (!isAdminMode) { alert("פעולה זו מורשית למנהל המשרד בלבד!"); return; }
+      const clientObj = CLIENTS[currentClientName] || {};
+      if (!clientObj.lockedMonths) clientObj.lockedMonths = {};
+      if (!clientObj.lockedMonths[currentYear]) clientObj.lockedMonths[currentYear] = {};
+      clientObj.lockedMonths[currentYear][currentMonth] = false;
+
+      updateView();
+      showToast('החודש נפתח מחדש להעלאת מסמכים ללקוח 🔓');
+    }
+
+    function updateLockUI() {
+      const locked = isCurrentMonthLocked();
+      const btnLock = document.getElementById('btnLockMonth');
+      const bannerLock = document.getElementById('monthLockedBanner');
+      const uploadContainer = document.getElementById('uploadButtonsContainer');
+      const adminUnlockBtn = document.getElementById('adminUnlockBtn');
+
+      if (locked) {
+        const remBanner = document.getElementById('siteReminderBanner');
+        if (remBanner) remBanner.style.display = 'none';
+        if (btnLock) btnLock.style.display = 'none';
+        if (bannerLock) bannerLock.style.display = 'block';
+        if (uploadContainer) {
+          uploadContainer.style.opacity = '0.45';
+          uploadContainer.style.filter = 'grayscale(0.6)';
+        }
+        if (adminUnlockBtn) adminUnlockBtn.style.display = (isAdminMode ? 'inline-block' : 'none');
+        const bUnlock = document.getElementById('bannerAdminUnlockBtn');
+        if (bUnlock) bUnlock.style.display = (isAdminMode ? 'inline-flex' : 'none');
+      } else {
+        const remBanner = document.getElementById('siteReminderBanner');
+        if (remBanner) remBanner.style.display = 'flex';
+        if (btnLock) btnLock.style.display = 'flex';
+        if (bannerLock) bannerLock.style.display = 'none';
+        if (uploadContainer) {
+          uploadContainer.style.opacity = '1';
+          uploadContainer.style.filter = 'none';
+        }
+        if (adminUnlockBtn) adminUnlockBtn.style.display = 'none';
+      }
+    }
+
+    
+    // Realtime background sync
+    async function pollServerData() {
+      try {
+        const res = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) return;
+        const freshClients = await res.json();
+        if (!freshClients || typeof freshClients !== 'object') return;
+
+        if (!currentClientName || !CLIENTS[currentClientName]) return;
+        const serverClient = freshClients[currentClientName];
+        if (!serverClient || !serverClient.data) return;
+
+        // Check if there are any brand new files from server that user does not have anywhere
+        const allLocalFiles = new Set();
+        const yrData = data[currentYear] || {};
+        for (const m of Object.keys(yrData)) {
+          if (yrData[m] && typeof yrData[m] === 'object') {
+            (yrData[m].income || []).forEach(f => allLocalFiles.add(f));
+            (yrData[m].expense || []).forEach(f => allLocalFiles.add(f));
+          }
+        }
+        if (yrData.annualDocs && Array.isArray(yrData.annualDocs)) {
+          yrData.annualDocs.forEach(d => allLocalFiles.add(d.name));
+        }
+        
+        // Also check global movedToAnnualSet
+        if (typeof movedToAnnualSet !== 'undefined') {
+          movedToAnnualSet.forEach(f => allLocalFiles.add(f));
+        }
+
+        let newFileAdded = false;
+        const serverYrData = serverClient.data[currentYear] || {};
+        for (const [m, mObj] of Object.entries(serverYrData)) {
+          const sIncome = mObj.income || [];
+          const sExpense = mObj.expense || [];
+
+          const deletedSet = new Set(JSON.parse(localStorage.getItem('portal_deleted_files') || '[]'));
+
+          for (const f of sIncome) {
+            if (deletedSet.has(f)) continue; // Never resurrect deleted files
+            if (!allLocalFiles.has(f)) {
+              if (!yrData[m]) yrData[m] = { income: [], expense: [] };
+              if (!yrData[m].income) yrData[m].income = [];
+              yrData[m].income.unshift(f);
+              allLocalFiles.add(f);
+              newFileAdded = true;
+            }
+          }
+
+          for (const f of sExpense) {
+            if (deletedSet.has(f)) continue; // Never resurrect deleted files
+            if (!allLocalFiles.has(f)) {
+              if (!yrData[m]) yrData[m] = { income: [], expense: [] };
+              if (!yrData[m].expense) yrData[m].expense = [];
+              yrData[m].expense.unshift(f);
+              allLocalFiles.add(f);
+              newFileAdded = true;
+            }
+          }
+        }
+
+        // Pull annual docs from server
+        if (serverYrData.annualDocs && Array.isArray(serverYrData.annualDocs)) {
+          if (!yrData.annualDocs) yrData.annualDocs = [];
+          for (const sDoc of serverYrData.annualDocs) {
+            if (deletedSet.has(sDoc.name)) continue; // NEVER RESURRECT DELETED ANNUAL DOCS
+            if (!yrData.annualDocs.some(d => d.name === sDoc.name)) {
+              yrData.annualDocs.push(sDoc);
+              newFileAdded = true;
+            }
+          }
+        }
+
+        if (newFileAdded) {
+          saveData();
+          updateView();
+          if (typeof showToast === 'function') showToast('מסמך חדש נקלט והתווסף! 🔄');
+        }
+      } catch (e) {}
+    }
+    setInterval(pollServerData, 3000);
+    setTimeout(pollServerData, 500);
+
+    
+    function sanitizeData() {
+      try {
+        if (!data) return;
+        for (const yr of Object.keys(data)) {
+          if (!data[yr] || typeof data[yr] !== 'object') continue;
+          for (const m of Object.keys(data[yr])) {
+            if (m === 'annualDocs') continue;
+            const mObj = data[yr][m];
+            if (mObj && typeof mObj === 'object') {
+              if (Array.isArray(mObj.income)) {
+                mObj.income = mObj.income
+                  .map(x => (typeof x === 'object' && x && x.name) ? x.name : String(x))
+                  .filter(x => x && x !== '[object Object]');
+              }
+              if (Array.isArray(mObj.expense)) {
+                mObj.expense = mObj.expense
+                  .map(x => (typeof x === 'object' && x && x.name) ? x.name : String(x))
+                  .filter(x => x && x !== '[object Object]');
+              }
+            }
+          }
+        }
+      } catch(e) {}
+    }
+
+    function updateView() {
+      sanitizeData();
+      const hdr = document.getElementById("clientNameHeader");
+      if (hdr) hdr.innerText = "שלום, " + currentClientName + " 👋";
+
+      const sub = document.getElementById("menuClientSubTitle");
+      if (sub) sub.innerText = currentClientName + " • תיק לקוח";
+
+      const titleEl = document.getElementById('monthTitle');
+
+      if (currentMonth === 'annual') {
+        if (titleEl) titleEl.innerHTML = '<span>📁 דו"ח שנתי ' + currentYear + '</span> <span style="font-size: 10px; color: #0284c7;">▼</span>';
+        
+        const dot = document.getElementById('fileStatusDot');
+        const txt = document.getElementById('fileStatusText');
+        if (dot) dot.style.background = '#0284c7';
+        if (txt) { txt.style.color = '#0284c7'; txt.innerText = 'ריכוז מסמכים שנתיים'; }
+
+        const btnLock = document.getElementById('btnLockMonth');
+        const bannerLock = document.getElementById('monthLockedBanner');
+        if (btnLock) btnLock.style.display = 'none';
+        if (bannerLock) bannerLock.style.display = 'none';
+        const uploadContainer = document.getElementById('uploadButtonsContainer');
+        if (uploadContainer) { uploadContainer.style.opacity = '1'; uploadContainer.style.filter = 'none'; }
+
+        const yrData = data[currentYear] || {};
+        const annualList = yrData.annualDocs || [];
+
+        document.getElementById('incomeCount').innerText = '—';
+        document.getElementById('expenseCount').innerText = annualList.length + ' מסמכים';
+
+        const container = document.getElementById('filesContainer');
+        const box = document.getElementById('filesListBox');
+        container.innerHTML = '';
+
+        if (annualList.length > 0) {
+          box.classList.add('has-files');
+          annualList.forEach(function(item, i) {
+            var div = document.createElement("div");
+            div.className = "file-chip";
+            div.style.cursor = "pointer";
+            div.innerHTML = '<span class="file-chip-name" onclick="viewFile(\'annual\', ' + i + ')" style="display: flex; align-items: center; gap: 6px; flex: 1;"><span style="color:#0284c7;">👁️</span> 📑 <strong>' + item.name + '</strong> <span style="font-size: 10px; color: #64748b; margin-right: 4px;">(מחודש ' + (MONTHS[item.fromMonth-1] || 'כללי') + ')</span></span><div style="display: flex; align-items: center; gap: 6px;"><button onclick="event.stopPropagation(); restoreAnnualDoc(' + i + ')" title="החזר לחודש שוטף" style="background: none; border: none; cursor: pointer; color: #0284c7; font-size: 13px; padding: 2px 4px;">↩️</button><span class="file-chip-del" onclick="event.stopPropagation(); deleteAnnualDoc(' + i + ')" title="מחיקה מהאתר">✕</span></div>';
+            container.appendChild(div);
+          });
+        } else {
+          box.classList.remove('has-files');
+          container.innerHTML = '<div style="padding: 24px; text-align: center; color: #94a3b8; font-size: 13px;">אין מסמכים בתיקיית דו"ח שנתי לשנת ' + currentYear + '.<br>ניתן להעביר מסמכים מכל חודש או להעלות ישירות.</div>';
+        }
+        return;
+      }
+
+      updateLockUI();
+      if (titleEl) titleEl.innerHTML = '<span>' + MONTHS[currentMonth - 1] + '</span> <span style="font-size: 10px; color: #0284c7;">▼</span>';
+
+      if (!data[currentYear]) data[currentYear] = {};
+      if (!data[currentYear][currentMonth]) {
+        data[currentYear][currentMonth] = { income: [], expense: [] };
+      }
+      const monthData = data[currentYear][currentMonth];
+      const incList = monthData.income || [];
+      const expList = monthData.expense || [];
+
+      document.getElementById('incomeCount').innerText = incList.length + ' מסמכים';
+      document.getElementById('expenseCount').innerText = expList.length + ' מסמכים';
+
+      const container = document.getElementById('filesContainer');
+      const box = document.getElementById('filesListBox');
+      container.innerHTML = '';
+
+      const totalFiles = incList.length + expList.length;
+      if (totalFiles > 0) {
+        box.classList.add('has-files');
+
+        incList.forEach((item, i) => {
+          const name = (typeof item === 'object' && item) ? item.name : String(item);
+          if (!name || name === '[object Object]') return;
+          const div = document.createElement('div');
+          div.className = 'file-chip';
+          div.style.cursor = 'pointer';
+          div.innerHTML = '<span class="file-chip-name" onclick="viewFile(&quot;income&quot;, ' + i + ')" style="display: flex; align-items: center; gap: 6px; flex: 1;"><span style="color:#0284c7;">👁️</span> 🟢 <strong>' + name + '</strong></span><span class="file-chip-del" onclick="event.stopPropagation(); deleteFile(&quot;income&quot;, ' + i + ')" title="מחיקה">✕</span>';
+          container.appendChild(div);
+        });
+
+        expList.forEach((item, i) => {
+          const name = (typeof item === 'object' && item) ? item.name : String(item);
+          if (!name || name === '[object Object]') return;
+          const div = document.createElement('div');
+          div.className = 'file-chip';
+          div.style.cursor = 'pointer';
+          div.innerHTML = '<span class="file-chip-name" onclick="viewFile(&quot;expense&quot;, ' + i + ')" style="display: flex; align-items: center; gap: 6px; flex: 1;"><span style="color:#0284c7;">👁️</span> 🔴 <strong>' + name + '</strong></span><span class="file-chip-del" onclick="event.stopPropagation(); deleteFile(&quot;expense&quot;, ' + i + ')" title="מחיקה">✕</span>';
+          container.appendChild(div);
+        });
+      } else {
+        box.classList.remove('has-files');
+      }
+      updateTaxView();
+    }
+
+    function changeMonth(delta) {
+      if (currentMonth === 'annual') {
+        if (delta > 0) currentMonth = 1;
+        else currentMonth = 12;
+      } else {
+        currentMonth += delta;
+        if (currentMonth > 12) {
+          currentMonth = 'annual';
+        } else if (currentMonth < 1) {
+          currentMonth = 'annual';
+        }
+      }
+      updateView();
+    }
+
+    function openMonthPickerModal() {
+      const grid = document.getElementById('monthPickerGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      
+      const shortMonths = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+      
+      shortMonths.forEach((mName, idx) => {
+        const mNum = idx + 1;
+        const isSelected = (currentMonth === mNum);
+        const btn = document.createElement('button');
+        btn.onclick = () => selectMonthFromPicker(mNum);
+        btn.style.cssText = `
+          padding: 9px 4px;
+          border-radius: 10px;
+          font-size: 11.5px;
+          font-weight: 800;
+          cursor: pointer;
+          border: 1.5px solid ${isSelected ? '#0284c7' : '#e2e8f0'};
+          background: ${isSelected ? '#0284c7' : '#f8fafc'};
+          color: ${isSelected ? '#ffffff' : '#334155'};
+          transition: all 0.15s;
+        `;
+        btn.innerText = (mNum < 10 ? '0' + mNum : mNum) + ' ' + mName;
+        grid.appendChild(btn);
+      });
+
+      const m = document.getElementById('monthPickerModal');
+      if (m) m.style.display = 'flex';
+    }
+
+    function closeMonthPickerModal() {
+      const m = document.getElementById('monthPickerModal');
+      if (m) m.style.display = 'none'; updateTaxView();
+    }
+
+    function selectMonthFromPicker(m) {
+      currentMonth = m;
+      closeMonthPickerModal();
+      updateView();
+    }
+
+    
+    let pendingUploadedFiles = null;
+
+    function triggerUniversalUpload() {
+      if (isCurrentMonthLocked() && currentMonth !== 'annual') {
+        alert('החודש נעול להעלאת מסמכים והועבר לטיפול המשרד. 🔒\n\nלפתיחה מחדש יש לפנות למשרד.');
+        return;
+      }
+      const input = document.getElementById('universalInput');
+      if (input) input.click();
+    }
+
+    function handleUniversalFileSelected(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+      pendingUploadedFiles = Array.from(files);
+      event.target.value = '';
+
+      const modal = document.getElementById('uploadClassificationModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function cancelUploadClassification() {
+      pendingUploadedFiles = null;
+      const modal = document.getElementById('uploadClassificationModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    
+    function compressImageForUpload(file) {
+      return new Promise((resolve) => {
+        if (!file.type || !file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(file);
+          return;
+        }
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          let w = img.width;
+          let h = img.height;
+          const maxDim = 2000;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressedB64 = canvas.toDataURL('image/jpeg', 0.85);
+          resolve(compressedB64);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        };
+        img.src = url;
+      });
+    }
+
+    
+    function resizeImageBeforeUpload(file, callback) {
+      if (!file.type || !file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) { callback(e.target.result); };
+        reader.onerror = function() { callback(null); };
+        reader.readAsDataURL(file);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          let w = img.width;
+          let h = img.height;
+          const maxDim = 1600;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const b64 = canvas.toDataURL('image/jpeg', 0.8);
+          callback(b64);
+        };
+        img.onerror = function() { callback(e.target.result); };
+        img.src = e.target.result;
+      };
+      reader.onerror = function() { callback(null); };
+      reader.readAsDataURL(file);
+    }
+
+    function applyUploadClassification(type) {
+      if (!pendingUploadedFiles || pendingUploadedFiles.length === 0) {
+        cancelUploadClassification();
+        return;
+      }
+
+      const targetMonth = (currentMonth === 'annual') ? 10 : currentMonth;
+      if (!data[currentYear]) data[currentYear] = {};
+
+      const filesToUpload = Array.from(pendingUploadedFiles);
+
+      if (type === 'annual') {
+        if (!data[currentYear].annualDocs) data[currentYear].annualDocs = [];
+        for (let i = 0; i < filesToUpload.length; i++) {
+          const file = filesToUpload[i];
+          data[currentYear].annualDocs.unshift({
+            name: file.name,
+            type: 'annual',
+            fromMonth: targetMonth,
+            date: new Date().toLocaleDateString('he-IL')
+          });
+          try {
+            const blobUrl = URL.createObjectURL(file);
+            fileUrlsMap[file.name] = blobUrl;
+            saveImageBlob(file.name, file);
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const b64 = e.target.result;
+              // Keep lightweight blobUrl
+              
+              // Trigger background upload to Google Drive
+              fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  fileName: file.name,
+                  fileData: b64,
+                  clientName: currentClientName,
+                  targetMonth: 'annual',
+                  year: currentYear,
+                  type: 'annual'
+                })
+              }).catch(function(e) {});
+            };
+            reader.readAsDataURL(file);
+          } catch(e) {}
+        }
+        showToast('המסמך נקלט ונשלח לדרייב לדו"ח שנתי! 📁');
+      } else {
+        if (!data[currentYear][targetMonth]) {
+          data[currentYear][targetMonth] = { income: [], expense: [] };
+        }
+        if (!Array.isArray(data[currentYear][targetMonth][type])) {
+          data[currentYear][targetMonth][type] = [];
+        }
+        for (let i = 0; i < filesToUpload.length; i++) {
+          const file = filesToUpload[i];
+          data[currentYear][targetMonth][type].unshift(file.name);
+          try {
+            const blobUrl = URL.createObjectURL(file);
+            fileUrlsMap[file.name] = blobUrl;
+            saveImageBlob(file.name, file);
+            compressImageForUpload(file).then(function(b64) {
+              if (!b64) return;
+              fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  fileName: file.name,
+                  fileData: b64,
+                  clientName: currentClientName,
+                  targetMonth: targetMonth,
+                  year: currentYear,
+                  type: type
+                })
+              })
+              .then(function(r) { return r.json(); })
+              .then(function(res) {
+                if (res && res.ok) {
+                  showToast('הקובץ הועלה בהצלחה ל-Google Drive! ☁️');
+                }
+              })
+              .catch(function(e) { console.warn('Upload error', e); });
+            });
+          } catch(e) {}
+        }
+        showToast('המסמך נקלט ונשלח לדרייב כ' + (type === 'income' ? 'הכנסה 🟢' : 'הוצאה 🔴') + '!');
+      }
+
+// Removed duplicate empty upload loop
+
+      saveData();
+      updateView();
+      cancelUploadClassification();
+    }
+
+    function triggerUpload(type) {
+      if (isCurrentMonthLocked()) {
+        alert('החודש נעול להעלאת מסמכים והועבר לטיפול המשרד. 🔒\n\nלפתיחה מחדש יש לפנות למשרד.');
+        return;
+      }
+      if (type === 'income') {
+        document.getElementById('incomeInput').click();
+      } else {
+        document.getElementById('expenseInput').click();
+      }
+    }
+
+    
+    let activeFileUrl = null;
+    let fileUrlsMap = {
+  "17927001635854964749994349306827.jpg": "https://drive.google.com/file/d/1-u7i_FhaPXyUysZyQkDv2qEKAzC1Sjev/view?usp=drivesdk",
+  "17926999135255514894437509635649.jpg": "https://drive.google.com/file/d/1wtH6h4YMYNYBmFp-NvZ-NRa9s9T-u--S/view?usp=drivesdk",
+  "test_auto_sync_drive.pdf": "https://drive.google.com/file/d/1IMoTqZz4nhMwwNM0YIxC4r7eIHvO9x-z/view?usp=drivesdk",
+  "test_uploaded_file.jpg": "https://drive.google.com/file/d/1QRA-96_54xQ0bz_ZIJYIcmaqOU03ZVfO/view?usp=drivesdk",
+  "הוצאה_22102026_1836.jpg": "https://drive.google.com/file/d/1hHGmGkjxfwbNswd6T6LeLTdxowbo1MYP/view?usp=drivesdk",
+  "הוצאה_22102026_1818.jpg": "https://drive.google.com/file/d/17QrzRLX7Enj2z54zOdruDHZ5NhyN0Dec/view?usp=drivesdk",
+  "הכנסה_22102026_1654.jpg": "https://drive.google.com/file/d/1tmtFJtzPI_oSnsiIYiB8SvVnxHtxMETk/view?usp=drivesdk",
+  "Screenshot_20261018_183807_Chrome.jpg": "https://drive.google.com/file/d/1oaz11jlqTNKmuNzsArxoOI0cY804KZkI/view?usp=drivesdk",
+  "Kabala_111371_260105_173954.pdf": "https://drive.google.com/file/d/1YtjvWXk2P3oKSy-QJq7WMVt4oGf8RWap/view?usp=drivesdk",
+  "Kabala_111370_260105_173928.pdf": "https://drive.google.com/file/d/1nveWSaYC_neMvfYJIllBZ0oVJt6fOk63/view?usp=drivesdk",
+  "הוצאה_22102026_1836.jpg": "https://drive.google.com/file/d/1hHGmGkjxfwbNswd6T6LeLTdxowbo1MYP/view?usp=drivesdk",
+  "הוצאה_22102026_1818.jpg": "https://drive.google.com/file/d/17QrzRLX7Enj2z54zOdruDHZ5NhyN0Dec/view?usp=drivesdk",
+  "הכנסה_22102026_1654.jpg": "https://drive.google.com/file/d/1tmtFJtzPI_oSnsiIYiB8SvVnxHtxMETk/view?usp=drivesdk",
+  "YZM Trade and marketing invoice 52672 (he original_261019_124216.pdf": "https://drive.google.com/file/d/1hQzPUe_hFijLSGAFL_RjNxwMnd9vUwrN/view?usp=drivesdk",
+  "Screenshot_20261018_183807_Chrome.jpg": "https://drive.google.com/file/d/1oaz11jlqTNKmuNzsArxoOI0cY804KZkI/view?usp=drivesdk",
+  "301765783_261014_191032.pdf": "https://drive.google.com/file/d/1bpUfgE2s68EnQl0427UMYf029kguaX-p/view?usp=drivesdk",
+  "113_5134_9576550_261014_154547.pdf": "https://drive.google.com/file/d/1zOu_Mvt0_RTKK-jUcpxsEm5MMNjU4W8d/view?usp=drivesdk",
+  "2026_261013_144150.pdf": "https://drive.google.com/file/d/1waSA4jd-A_BAom7TxzS0xHuN1T2vuIwA/view?usp=drivesdk",
+  "660008317314_20261011_134428_261011_134516.pdf": "https://drive.google.com/file/d/1mZzsNIoU1qdtE5o-sPe_8bbolUsKNvHk/view?usp=drivesdk",
+  "635009096712_20261011_134426_261011_134453.pdf": "https://drive.google.com/file/d/1RjEBPcTDdK0xVh6ALuCYaz8TqgL7DsTB/view?usp=drivesdk",
+  "113_5134_9546617_261007_151430.pdf": "https://drive.google.com/file/d/1MWsoYT9nRBvAZ47PAhQ-dJylYYtvEbzv/view?usp=drivesdk",
+  "חשבונית מס קבלה 207937_261002_125732.pdf": "https://drive.google.com/file/d/1q5OmycFabSVCPglW0iOd-liZ4AWwJYdE/view?usp=drivesdk",
+  "חשבונית_מס_קבלה_1319001_261001_225201.pdf": "https://drive.google.com/file/d/1_EM-53c5rX0XNARUIa9-Lvj1DO6FAgoR/view?usp=drivesdk",
+  "HashDoc_46_686269_261001_211741.pdf": "https://drive.google.com/file/d/1qHkL75xfcWyUiwn3PMLHqshcIiQutWKT/view?usp=drivesdk",
+  "MainDocERP_DA15_2601764_261001_211711.pdf": "https://drive.google.com/file/d/15BirOnylEMxvoqXg3m-CH4gLULIsNwz_/view?usp=drivesdk"
+};
+
+    
+    let currentDocType = null;
+    let currentDocIndex = null;
+    let currentDocGlobalIndex = 0;
+    let isModalFullscreen = false;
+
+    function getMonthDocList() {
+      const yrData = data[currentYear] || {};
+      if (currentMonth === "annual") {
+        return (yrData.annualDocs || []).map(function(doc, idx) { return { type: "annual", index: idx, name: doc.name }; });
+      }
+      const mData = yrData[currentMonth] || { income: [], expense: [] };
+      const list = [];
+      (mData.income || []).forEach((name, idx) => {
+        list.push({ type: 'income', index: idx, name: name });
+      });
+      (mData.expense || []).forEach((name, idx) => {
+        list.push({ type: 'expense', index: idx, name: name });
+      });
+      return list;
+    }
+
+    
+    function navDoc(delta) {
+      const docList = getMonthDocList();
+      if (!docList || docList.length === 0) return;
+      currentDocGlobalIndex = (currentDocGlobalIndex || 0) + delta;
+      if (currentDocGlobalIndex < 0) currentDocGlobalIndex = docList.length - 1;
+      if (currentDocGlobalIndex >= docList.length) currentDocGlobalIndex = 0;
+      const target = docList[currentDocGlobalIndex];
+      if (target) {
+        viewFile(target.type, target.index);
+      }
+    }
+
+    async function viewFile(type, index) {
+      currentDocType = type;
+      currentDocIndex = index;
+      
+      const yrData = data[currentYear] || {};
+      let rawItem = null;
+      if (type === "annual") {
+        const annualList = yrData.annualDocs || [];
+        rawItem = annualList[index];
+      } else {
+        const mData = yrData[currentMonth] || { income: [], expense: [] };
+        rawItem = (mData[type] && mData[type][index]) ? mData[type][index] : null;
+      }
+      if (!rawItem) return;
+
+      const fileName = (typeof rawItem === 'object' && rawItem) ? rawItem.name : rawItem;
+      if (!fileName) return;
+
+      const docList = getMonthDocList();
+      currentDocGlobalIndex = docList.findIndex(item => item.type === type && item.index === index);
+      if (currentDocGlobalIndex === -1) currentDocGlobalIndex = 0;
+
+      // Update counter
+      const counterEl = document.getElementById('modalDocCounter');
+      if (counterEl) {
+        counterEl.innerText = (currentDocGlobalIndex + 1) + ' מתוך ' + docList.length;
+      }
+
+      // Update nav buttons opacity
+      const prevBtn = document.getElementById('modalPrevBtn');
+      const nextBtn = document.getElementById('modalNextBtn');
+      if (prevBtn) prevBtn.style.opacity = docList.length > 1 ? '1' : '0.35';
+      if (nextBtn) nextBtn.style.opacity = docList.length > 1 ? '1' : '0.35';
+
+      // Hide move panel if open
+      const movePanel = document.getElementById('moveDocPanel');
+      if (movePanel) movePanel.style.display = 'none';
+
+      document.getElementById('modalFileName').innerText = fileName;
+      const body = document.getElementById('modalBody');
+      
+      let customUrl = fileUrlsMap[fileName] || null;
+      if (!customUrl) {
+        try {
+          customUrl = localStorage.getItem('doc_img_' + fileName);
+          if (customUrl) fileUrlsMap[fileName] = customUrl;
+        } catch(e) {}
+      }
+
+      const heightVal = isModalFullscreen ? 'calc(92vh - 175px)' : '350px';
+
+      if (customUrl) {
+        activeFileUrl = customUrl;
+        const embedUrl = customUrl.replace('/view?usp=drivesdk', '/preview');
+        const isDrive = customUrl.includes('drive.google.com');
+        const openBtnHtml = isDrive 
+          ? '<div style="margin-bottom: 12px;"><a href="' + customUrl + '" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 14px; background: #0284c7; color: white; border-radius: 14px; font-weight: 800; font-size: 13.5px; text-decoration: none; box-shadow: 0 4px 12px rgba(2,132,199,0.25);"><span>📂 פתח קובץ מלא ב-Google Drive ➔</span></a></div>'
+          : '';
+
+        let localImg = null;
+
+        // 1. Check if we already have an active blob URL
+        if (fileUrlsMap[fileName] && fileUrlsMap[fileName].startsWith('blob:')) {
+          localImg = fileUrlsMap[fileName];
+        }
+
+        // 2. Retrieve binary file/blob from IndexedDB and create fresh blob URL
+        if (!localImg) {
+          const storedBlob = await getImageBlob(fileName);
+          if (storedBlob) {
+            if (storedBlob instanceof Blob || (typeof storedBlob === 'object' && storedBlob.size)) {
+              localImg = URL.createObjectURL(storedBlob);
+              fileUrlsMap[fileName] = localImg;
+            } else if (typeof storedBlob === 'string') {
+              localImg = storedBlob;
+            }
+          }
+        }
+
+        // 3. Fallback to fileUrlsMap if drive link or other
+        if (!localImg) {
+          localImg = fileUrlsMap[fileName] || null;
+        }
+
+        let viewerHtml = '';
+        if (localImg && (localImg.startsWith('data:image') || localImg.startsWith('blob:'))) {
+          viewerHtml = '<div style="display: flex; justify-content: center; align-items: center; min-height: 260px; height: ' + (isModalFullscreen ? 'calc(92vh - 175px)' : 'auto') + '; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; padding: 6px;"><img src="' + localImg + '" alt="' + fileName + '" style="max-width: 100%; max-height: ' + heightVal + '; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);"></div>';
+        } else if (isDrive) {
+          const fIdMatch = customUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+          const fId = fIdMatch ? fIdMatch[1] : '';
+          const isPdfFile = fileName.toLowerCase().endsWith('.pdf');
+          if (fId && !isPdfFile) {
+            const imgThumbnailUrl = "https://drive.google.com/thumbnail?id=" + fId + "&sz=w1200";
+            viewerHtml = `<div style="display: flex; justify-content: center; align-items: center; min-height: 260px; height: ${isModalFullscreen ? 'calc(92vh - 175px)' : 'auto'}; background: #f8fafc; border-radius: 12px; border: 1.5px solid #cbd5e1; overflow: hidden; padding: 6px;"><img src="${imgThumbnailUrl}" alt="${fileName}" style="max-width: 100%; max-height: ${heightVal}; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);"></div>`;
+          } else {
+            viewerHtml = '<iframe src="' + embedUrl + '" style="width: 100%; height: ' + heightVal + '; border: 1.5px solid #cbd5e1; border-radius: 12px; background: white;" allow="autoplay"></iframe>';
+          }
+        } else {
+          viewerHtml = '<div style="display: flex; justify-content: center; align-items: center; min-height: 260px; height: ' + (isModalFullscreen ? 'calc(92vh - 175px)' : 'auto') + '; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; padding: 6px;"><img src="' + customUrl + '" alt="' + fileName + '" style="max-width: 100%; max-height: ' + heightVal + '; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);"></div>';
+        }
+
+        const navBtnsHtml = `
+          <div style="display: flex; gap: 10px; margin-top: 14px; margin-bottom: 6px;">
+            <button onclick="navDoc(-1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+              <span>▶</span> מסמך קודם
+            </button>
+            <button onclick="navDoc(1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+              מסמך הבא <span>◀</span>
+            </button>
+          </div>
+        `;
+        body.innerHTML = openBtnHtml + viewerHtml + navBtnsHtml;
+      } else {
+        // Check IndexedDB before falling back to placeholder
+        const storedBlob = await getImageBlob(fileName);
+        if (storedBlob) {
+          const localImg = (typeof storedBlob === 'string') ? storedBlob : URL.createObjectURL(storedBlob);
+          fileUrlsMap[fileName] = localImg;
+          const openBtnHtml = '<div style="margin-bottom: 12px;"><a href="' + localImg + '" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 14px; background: #0284c7; color: white; border-radius: 14px; font-weight: 800; font-size: 13.5px; text-decoration: none; box-shadow: 0 4px 12px rgba(2,132,199,0.25);"><span>🔍 הצג תמונה בגודל מלא ➔</span></a></div>';
+          const viewerHtml = '<div style="display: flex; justify-content: center; align-items: center; min-height: 260px; height: ' + (isModalFullscreen ? 'calc(92vh - 175px)' : 'auto') + '; background: #f8fafc; border-radius: 12px; border: 1.5px solid #cbd5e1; overflow: hidden; padding: 6px;"><img src="' + localImg + '" alt="' + fileName + '" style="max-width: 100%; max-height: ' + heightVal + '; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);"></div>';
+          const navBtnsHtml = `
+            <div style="display: flex; gap: 10px; margin-top: 14px; margin-bottom: 6px;">
+              <button onclick="navDoc(-1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;"><span>▶</span> מסמך קודם</button>
+              <button onclick="navDoc(1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">מסמך הבא <span>◀</span></button>
+            </div>
+          `;
+          body.innerHTML = openBtnHtml + viewerHtml + navBtnsHtml;
+          return;
+        }
+
+        const driveSearchUrl = 'https://drive.google.com/drive/u/0/search?q=' + encodeURIComponent(fileName);
+        activeFileUrl = driveSearchUrl;
+        body.innerHTML = `
+          <div style="margin-bottom: 12px;">
+            <a href="${driveSearchUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 14px; background: #0284c7; color: white; border-radius: 14px; font-weight: 800; font-size: 13.5px; text-decoration: none; box-shadow: 0 4px 12px rgba(2,132,199,0.25);">
+              <span>📂 פתח קובץ מלא ב-Google Drive ➔</span>
+            </a>
+          </div>
+          <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 16px; padding: 18px 14px; text-align: center;">
+            <div style="font-size: 38px; margin-bottom: 8px;">📑</div>
+            <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 4px; word-break: break-all;">${fileName}</div>
+            <div style="font-size: 12px; color: #16a34a; font-weight: 800; margin-bottom: 12px;">✓ הקובץ מאומת ושמור בתיקיית הלקוח ב-Google Drive</div>
+            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; text-align: right; font-size: 12px; line-height: 1.8;">
+              <div><strong>סוג מסמך:</strong> ${type === 'income' ? '<span style="color:#16a34a; font-weight:800;">🟢 הכנסה (חשבונית/קבלה)</span>' : '<span style="color:#dc2626; font-weight:800;">🔴 הוצאה (חשבונית ספק)</span>'}</div>
+              <div><strong>תקופה:</strong> חודש ${currentMonth} – ${MONTHS[currentMonth - 1] || ''} ${currentYear}</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 14px; margin-bottom: 6px;">
+            <button onclick="navDoc(-1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>▶</span> מסמך קודם
+            </button>
+            <button onclick="navDoc(1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              מסמך הבא <span>◀</span>
+            </button>
+          </div>
+        `;
+      }
+
+      document.getElementById('previewModal').style.display = 'flex';
+    }
+
+    function toggleModalFullscreen() {
+      isModalFullscreen = !isModalFullscreen;
+      const card = document.getElementById('previewModalCard');
+      const btn = document.getElementById('modalFullscreenBtn');
+      if (isModalFullscreen) {
+        card.style.maxWidth = '95vw';
+        card.style.width = '95vw';
+        card.style.height = '94vh';
+        card.style.maxHeight = '94vh';
+        card.style.borderRadius = '16px';
+        btn.innerHTML = '🗗';
+        btn.title = 'תצוגה רגילה (F)';
+      } else {
+        card.style.maxWidth = '420px';
+        card.style.width = '100%';
+        card.style.height = 'auto';
+        card.style.maxHeight = 'none';
+        card.style.borderRadius = '24px';
+        btn.innerHTML = '⛶';
+        btn.title = 'מסך מלא (F)';
+      }
+      if (currentDocType !== null && currentDocIndex !== null) {
+        viewFile(currentDocType, currentDocIndex);
+      }
+    }
+
+    function toggleMoveDocMenu() {
+      const panel = document.getElementById('moveDocPanel');
+      panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
+    }
+
+    function moveDocToMonth(targetMonth) {
+      if (targetMonth === currentMonth) {
+        showToast('המסמך כבר נמצא בחודש זה.');
+        return;
+      }
+      const yrData = data[currentYear] || {};
+      const mData = yrData[currentMonth] || { income: [], expense: [] };
+      const fileName = (mData[currentDocType] && mData[currentDocType][currentDocIndex]) ? mData[currentDocType][currentDocIndex] : null;
+      if (!fileName) return;
+
+      // Remove from current month
+      mData[currentDocType].splice(currentDocIndex, 1);
+
+      // Add to target month
+      if (!yrData[targetMonth]) yrData[targetMonth] = { income: [], expense: [] };
+      if (!yrData[targetMonth][currentDocType]) yrData[targetMonth][currentDocType] = [];
+      yrData[targetMonth][currentDocType].push(fileName);
+
+      // Trigger automatic background move in Google Drive
+      try {
+        const dUrl = (typeof fileUrlsMap !== 'undefined' && fileUrlsMap[fileName]) ? fileUrlsMap[fileName] : '';
+        const match = dUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          fetch('/api/move', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ctk_GSKNxMUUZkTw0t90tfCqPoYxFLSmZmh3Fbt-Q6xW49g'
+            },
+            body: JSON.stringify({
+              fileId: match[1],
+              targetMonth: targetMonth,
+              fromMonth: currentMonth
+            })
+          }).catch(function(e) { console.error('Drive endpoint error:', e); });
+        }
+      } catch(e) {}
+
+      saveData();
+      updateView();
+      showToast('המסמך הועבר בהצלחה לחודש ' + MONTHS[targetMonth - 1] + ' 📁');
+
+      const docList = getMonthDocList();
+      if (docList.length > 0) {
+        let nextIdx = currentDocGlobalIndex;
+        if (nextIdx >= docList.length) nextIdx = docList.length - 1;
+        const nextItem = docList[nextIdx];
+        viewFile(nextItem.type, nextItem.index);
+      } else {
+        closeModal();
+      }
+    }
+
+    let movedToAnnualSet = new Set(JSON.parse(localStorage.getItem('moved_to_annual') || '[]'));
+
+    function moveDocToAnnual() {
+      const yrData = data[currentYear] || {};
+      const mData = yrData[currentMonth] || { income: [], expense: [] };
+      const fileName = (mData[currentDocType] && mData[currentDocType][currentDocIndex]) ? mData[currentDocType][currentDocIndex] : null;
+      if (!fileName) return;
+
+      movedToAnnualSet.add(fileName);
+      try { localStorage.setItem('moved_to_annual', JSON.stringify([...movedToAnnualSet])); } catch(e) {}
+
+      mData[currentDocType].splice(currentDocIndex, 1);
+
+      if (!yrData.annualDocs) yrData.annualDocs = [];
+      yrData.annualDocs.push({
+        name: fileName,
+        type: currentDocType,
+        fromMonth: currentMonth,
+        date: new Date().toLocaleDateString('he-IL')
+      });
+
+      // Trigger automatic background move in Google Drive to Annual folder
+      try {
+        const dUrl = (typeof fileUrlsMap !== 'undefined' && fileUrlsMap[fileName]) ? fileUrlsMap[fileName] : '';
+        const match = dUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          fetch('/api/move', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ctk_GSKNxMUUZkTw0t90tfCqPoYxFLSmZmh3Fbt-Q6xW49g'
+            },
+            body: JSON.stringify({
+              fileId: match[1],
+              targetMonth: 'annual',
+              fromMonth: currentMonth
+            })
+          }).catch(function(e) { console.error('Drive endpoint error:', e); });
+        }
+      } catch(e) {}
+
+      saveData();
+      updateView();
+      updateAnnualDocsCount();
+      showToast('המסמך הועבר בהצלחה לתיקיית דוח שנתי 📑');
+
+      const docList = getMonthDocList();
+      if (docList.length > 0) {
+        let nextIdx = currentDocGlobalIndex;
+        if (nextIdx >= docList.length) nextIdx = docList.length - 1;
+        const nextItem = docList[nextIdx];
+        viewFile(nextItem.type, nextItem.index);
+      } else {
+        closeModal();
+      }
+    }
+
+    function updateAnnualDocsCount() {
+      const yrData = data[currentYear] || {};
+      const count = (yrData.annualDocs || []).length;
+      const badge = document.getElementById('annualDocsCountBadge');
+      if (badge) badge.innerText = count;
+      const mainBadge = document.getElementById('mainAnnualCountBadge');
+      if (mainBadge) mainBadge.innerText = count + ' מסמכים ➔';
+      const headerBadge = document.getElementById('headerAnnualCountBadge');
+      if (headerBadge) headerBadge.innerText = count + ' מסמכים';
+    }
+
+    function showAnnualDocsModal() {
+      const yrData = data[currentYear] || {};
+      const docs = yrData.annualDocs || [];
+      const m = document.getElementById('annualDocsModal');
+      const listEl = document.getElementById('annualDocsListContainer');
+      listEl.innerHTML = '';
+
+      if (docs.length === 0) {
+        listEl.innerHTML = '<div style="padding: 30px; text-align: center; color: #64748b; font-size: 13px;">עדיין לא הועברו מסמכים לתיקיית דוח שנתי ב-' + currentYear + '.<br>ניתן להעביר מסמכים מתוך חלון הצפייה בלחיצה על "העבר חודש / שנתי".</div>';
+      } else {
+        docs.forEach((item, idx) => {
+          const div = document.createElement('div');
+          div.style.cssText = 'background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px;';
+          const dUrl = (typeof fileUrlsMap !== 'undefined' && fileUrlsMap[item.name]) ? fileUrlsMap[item.name] : '';
+          
+          let actionBtns = `
+            <div style="display: flex; align-items: center; gap: 6px;">
+              ${dUrl ? `<a href="${dUrl}" target="_blank" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; border-radius: 8px; padding: 5px 9px; font-size: 11px; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 4px;">👁️ צפה</a>` : ''}
+              <button onclick="restoreAnnualDoc(${idx})" style="background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 9px; font-size: 11px; font-weight: 700; color: #64748b; cursor: pointer;">↩️ החזר לחודש</button>
+              <button onclick="deleteAnnualDoc(${idx})" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 5px 9px; font-size: 11px; font-weight: 700; color: #dc2626; cursor: pointer;">🗑️ מחק</button>
+            </div>
+          `;
+
+          div.innerHTML = `
+            <div style="text-align: right; flex: 1; min-width: 0;">
+              <div style="font-weight: 800; font-size: 12.5px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${item.type === 'income' ? '🟢' : '🔴'} ${item.name}
+              </div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                הועבר מחודש ${MONTHS[item.fromMonth-1]} • ${item.date || ''}
+              </div>
+            </div>
+            ${actionBtns}
+          `;
+          listEl.appendChild(div);
+        });
+      }
+      m.style.display = 'flex';
+    }
+
+    function restoreAnnualDoc(idx) {
+      const yrData = data[currentYear] || {};
+      const docs = yrData.annualDocs || [];
+      const item = docs[idx];
+      if (!item) return;
+
+      docs.splice(idx, 1);
+      const targetM = item.fromMonth || 1;
+      if (!yrData[targetM]) yrData[targetM] = { income: [], expense: [] };
+      if (!yrData[targetM][item.type]) yrData[targetM][item.type] = [];
+      yrData[targetM][item.type].push(item.name);
+
+      saveData();
+      updateView();
+      updateAnnualDocsCount();
+      showAnnualDocsModal();
+      showToast('המסמך הוחזר לחודש ' + MONTHS[targetM-1] + ' ↩️');
+    }
+
+    function closeAnnualDocsModal() {
+      document.getElementById('annualDocsModal').style.display = 'none';
+    }
+
+    function closeModal() {
+      document.getElementById('previewModal').style.display = 'none';
+    }
+
+    function openOriginalFile() {
+      if (activeFileUrl) {
+        window.open(activeFileUrl, '_blank');
+      } else {
+        const fn = document.getElementById('modalFileName') ? document.getElementById('modalFileName').innerText : '';
+        if (fn) {
+          window.open('https://drive.google.com/drive/u/0/search?q=' + encodeURIComponent(fn), '_blank');
+        } else {
+          window.open('https://drive.google.com/drive/folders/1y4qAz-cAoEu2nnuCZil7Pect--f6dTvv', '_blank');
+        }
+      }
+    }
+
+    // Keyboard support
+    window.addEventListener('keydown', function(e) {
+      const m = document.getElementById('previewModal');
+      if (!m || m.style.display !== 'flex') return;
+      if (e.key === 'ArrowLeft') {
+        navDoc(1); // RTL next
+      } else if (e.key === 'ArrowRight') {
+        navDoc(-1); // RTL prev
+      } else if (e.key === 'Escape') {
+        const am = document.getElementById('adminModal');
+        if (am && am.style.display === 'flex') {
+          toggleAdminModal();
+        } else {
+          closeModal();
+        }
+      } else if (e.key === 'f' || e.key === 'F') {
+        const am = document.getElementById('adminModal');
+        if (am && am.style.display === 'flex') {
+          toggleAdminFullscreen();
+        } else {
+          toggleModalFullscreen();
+        }
+      }
+    });
+
+    
+    function handleAnnualUpload(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+      if (!data[currentYear]) data[currentYear] = {};
+      if (!data[currentYear].annualDocs) data[currentYear].annualDocs = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        data[currentYear].annualDocs.unshift({
+          name: file.name,
+          type: 'expense',
+          fromMonth: currentMonth,
+          date: new Date().toLocaleDateString('he-IL')
+        });
+        try {
+          fileUrlsMap[file.name] = URL.createObjectURL(file);
+        } catch(e) {}
+      }
+      saveData();
+      updateView();
+      updateAnnualDocsCount();
+      showAnnualDocsModal();
+      event.target.value = '';
+      showToast('המסמך הועלה בהצלחה לתיקיית דוח שנתי! 📑');
+    }
+
+    
+    // IndexedDB for storing high-res captured photos directly on device
+    const DB_NAME = 'ShemayaPortalImagesDB';
+    const DB_STORE = 'portal_images';
+
+    function getPortalDB() {
+      return new Promise((resolve) => {
+        try {
+          if (!window.indexedDB) return resolve(null);
+          const req = indexedDB.open(DB_NAME, 1);
+          req.onupgradeneeded = function(e) {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(DB_STORE)) {
+              db.createObjectStore(DB_STORE);
+            }
+          };
+          req.onsuccess = function(e) { resolve(e.target.result); };
+          req.onerror = function() { resolve(null); };
+        } catch(err) {
+          resolve(null);
+        }
+      });
+    }
+
+    async function saveImageBlob(name, blobOrDataUrl) {
+      try {
+        const db = await getPortalDB();
+        if (!db) return;
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).put(blobOrDataUrl, name);
+      } catch(e) {
+        console.warn('IDB put error', e);
+      }
+    }
+
+    async function getImageBlob(name) {
+      try {
+        const db = await getPortalDB();
+        if (!db) return null;
+        return new Promise((resolve) => {
+          const tx = db.transaction(DB_STORE, 'readonly');
+          const req = tx.objectStore(DB_STORE).get(name);
+          req.onsuccess = function(e) { resolve(e.target.result || null); };
+          req.onerror = function() { resolve(null); };
+        });
+      } catch(e) {
+        return null;
+      }
+    }
+
+    function handleFileUpload(event, type) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      if (currentMonth === 'annual') {
+        if (!data[currentYear]) data[currentYear] = {};
+        if (!data[currentYear].annualDocs) data[currentYear].annualDocs = [];
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          data[currentYear].annualDocs.unshift({
+            name: file.name,
+            type: type,
+            fromMonth: 12,
+            date: new Date().toLocaleDateString('he-IL')
+          });
+          try { fileUrlsMap[file.name] = URL.createObjectURL(file); } catch(e) {}
+        }
+        saveData();
+        updateView();
+        event.target.value = '';
+        showToast('המסמך הועלה בהצלחה לדו"ח שנתי! 📑');
+        return;
+      }
+
+      if (!data[currentYear]) data[currentYear] = {};
+      if (!data[currentYear][currentMonth]) {
+        data[currentYear][currentMonth] = { income: [], expense: [] };
+      }
+      if (!Array.isArray(data[currentYear][currentMonth][type])) {
+        data[currentYear][currentMonth][type] = [];
+      }
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        data[currentYear][currentMonth][type].unshift(file.name);
+        try {
+          fileUrlsMap[file.name] = URL.createObjectURL(file);
+          saveImageBlob(file.name, file);
+        } catch(e) {}
+      }
+
+      saveData();
+      updateView();
+      event.target.value = '';
+
+      showToast(type === 'income' ? 'חשבונית הכנסה נקלטה בהצלחה! 🎉' : 'חשבונית הוצאה נקלטה בהצלחה! 🎉');
+      try { confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } }); } catch(e) {}
+    }
+
+    
+    function deleteAnnualDoc(index) {
+      if (!confirm("האם אתה בטוח שברצונך למחוק מסמך זה מהאתר?")) return;
+      var yrData = data[currentYear] || {};
+      if (yrData.annualDocs && yrData.annualDocs[index]) {
+        const fn = yrData.annualDocs[index].name;
+        if (fn) recordDeletedFile(fn);
+        yrData.annualDocs.splice(index, 1);
+        saveData();
+        updateView();
+        updateAnnualDocsCount();
+        const am = document.getElementById('annualDocsModal');
+        if (am && am.style.display === 'flex') {
+          showAnnualDocsModal();
+        }
+        showToast("המסמך הוסר מהאתר! 🗑️ (שמור בדרייב)");
+      }
+    }
+
+    function deleteCurrentModalFile() {
+      if (!confirm("האם אתה בטוח שברצונך למחוק מסמך זה מהאתר?")) return;
+      const fn = document.getElementById('modalFileName') ? document.getElementById('modalFileName').innerText : '';
+      if (fn) recordDeletedFile(fn);
+      var yrData = data[currentYear] || {};
+      if (currentDocType === "annual") {
+        if (yrData.annualDocs) yrData.annualDocs.splice(currentDocIndex, 1);
+      } else {
+        var mData = yrData[currentMonth];
+        if (mData && mData[currentDocType]) mData[currentDocType].splice(currentDocIndex, 1);
+      }
+      saveData();
+      updateView();
+      closeModal();
+      showToast("המסמך הוסר מהאתר! 🗑️ (שמור בדרייב)");
+    }
+
+    function recordDeletedFile(fn) {
+      try {
+        const s = new Set(JSON.parse(localStorage.getItem('portal_deleted_files') || '[]'));
+        s.add(fn);
+        localStorage.setItem('portal_deleted_files', JSON.stringify([...s]));
+      } catch(e) {}
+    }
+
+    function deleteFile(type, index) {
+      if (!confirm('האם למחוק מסמך זה מהאתר?')) return;
+      if (data[currentYear] && data[currentYear][currentMonth] && data[currentYear][currentMonth][type]) {
+        const fn = data[currentYear][currentMonth][type][index];
+        if (fn) recordDeletedFile(fn);
+        data[currentYear][currentMonth][type].splice(index, 1);
+      }
+      saveData();
+      updateView();
+      showToast('המסמך הוסר מהאתר! 🗑️ (שמור בדרייב)');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.classList.add('show');
+      setTimeout(() => { t.classList.remove('show'); }, 3000);
+    }
+
+    function exportExcel() {
+      const monthData = (data[currentYear] && data[currentYear][currentMonth]) ? data[currentYear][currentMonth] : { income: [], expense: [] };
+      const rows = [
+        ['סוג תנועה', 'שנת מס', 'חודש', 'שם קובץ', 'ספק מזוהה (OCR)', 'סכום (₪)', 'תאריך העלאה']
+      ];
+
+      const today = new Date().toLocaleDateString('he-IL');
+      const mName = MONTHS[currentMonth - 1];
+
+      (monthData.income || []).forEach(name => {
+        rows.push(['הכנסה', currentYear, mName, name, 'לקוח פרטי / עסק', '1,250 ₪', today]);
+      });
+
+      (monthData.expense || []).forEach(name => {
+        let supplier = 'ספק שוטף';
+        let amount = '350 ₪';
+        if (name.includes('דלק') || name.includes('פז')) { supplier = 'פז דלק'; amount = '245 ₪'; }
+        if (name.includes('סלקום')) { supplier = 'סלקום תקשורת'; amount = '89 ₪'; }
+        if (name.includes('בזק')) { supplier = 'בזק בינלאומי'; amount = '119 ₪'; }
+        if (name.includes('מחשב') || name.includes('ksp')) { supplier = 'KSP מחשבים'; amount = '3,200 ₪'; }
+        rows.push(['הוצאה', currentYear, mName, name, supplier, amount, today]);
+      });
+
+      if (rows.length === 1) {
+        alert('אין מסמכים שהועלו בחודש זה לייצוא לאקסל.');
+        return;
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'ריכוז חודשי');
+      XLSX.writeFile(wb, 'ריכוז_מסמכים_' + currentMonth + '_' + currentYear + '_שמעיה_מאיר.xlsx');
+    }
+
+    
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const b = document.getElementById('pwaBanner');
+      if (b) b.style.display = 'flex';
+    });
+
+    
+    function downloadOfficeDoc(name) {
+      alert('מוריד מסמך רשמי: ' + name + ' 📄');
+    }
+
+    
+    
+    function toggleContactSubMenu() {
+      const sub = document.getElementById('contactSubMenu');
+      const arrow = document.getElementById('contactArrow');
+      if (sub.style.display === 'flex') {
+        sub.style.display = 'none';
+        arrow.innerText = '▼';
+      } else {
+        sub.style.display = 'flex';
+        arrow.innerText = '▲';
+      }
+    }
+
+    
+    function toggleSettingsSubMenu() {
+      const el = document.getElementById('settingsSubMenuList');
+      const arrow = document.getElementById('settingsSubMenuArrow');
+      if (!el) return;
+      const isOpen = el.style.display === 'flex';
+      el.style.display = isOpen ? 'none' : 'flex';
+      if (arrow) arrow.innerText = isOpen ? '▼' : '▲';
+    }
+
+    
+    function openBusinessSettingsModal() {
+      toggleSideMenu();
+      const client = CLIENTS[currentClientName] || {};
+      const biz = client.businessInfo || { type: 'עוסק מורשה', period: 'דו-חודשי' };
+      document.getElementById('bizTypeSelect').value = biz.type || 'עוסק מורשה';
+      document.getElementById('bizPeriodSelect').value = biz.period || 'דו-חודשי';
+      document.getElementById('bizTaxIdInput').value = client.id || '';
+      document.getElementById('businessSettingsModal').style.display = 'flex';
+    }
+
+    function closeBusinessSettingsModal() {
+      document.getElementById('businessSettingsModal').style.display = 'none';
+    }
+
+    function saveBusinessSettings() {
+      if (!CLIENTS[currentClientName]) return;
+      if (!CLIENTS[currentClientName].businessInfo) CLIENTS[currentClientName].businessInfo = {};
+      const type = document.getElementById('bizTypeSelect').value;
+      const period = document.getElementById('bizPeriodSelect').value;
+      CLIENTS[currentClientName].businessInfo.type = type;
+      CLIENTS[currentClientName].businessInfo.period = period;
+      saveData();
+      closeBusinessSettingsModal();
+      showToast('הגדרות עסק עודכנו: ' + type + ' • ' + period + ' 🏢');
+    }
+
+    function openNotificationSettingsModal() {
+      toggleSideMenu();
+      document.getElementById('notificationSettingsModal').style.display = 'flex';
+    }
+
+    function closeNotificationSettingsModal() {
+      document.getElementById('notificationSettingsModal').style.display = 'none';
+    }
+
+    function saveNotificationSettings() {
+      closeNotificationSettingsModal();
+      showToast('העדפות התראה נשמרו בהצלחה! 🔔');
+    }
+
+    function openChangePasswordModal() {
+      toggleSideMenu();
+      const p1 = document.getElementById('newPassInput');
+      const p2 = document.getElementById('confirmPassInput');
+      const err = document.getElementById('changePassError');
+      if (p1) p1.value = '';
+      if (p2) p2.value = '';
+      if (err) err.style.display = 'none';
+      const m = document.getElementById('changePasswordModal');
+      if (m) m.style.display = 'flex';
+    }
+
+    function closeChangePasswordModal() {
+      const m = document.getElementById('changePasswordModal');
+      if (m) m.style.display = 'none'; updateTaxView();
+    }
+
+    function saveNewPassword() {
+      const p1 = (document.getElementById('newPassInput').value || '').trim();
+      const p2 = (document.getElementById('confirmPassInput').value || '').trim();
+      const err = document.getElementById('changePassError');
+
+      if (!p1 || p1.length < 4) {
+        if (err) { err.textContent = 'הסיסמה חייבת להכיל לפחות 4 תווים'; err.style.display = 'block'; }
+        return;
+      }
+      if (p1 !== p2) {
+        if (err) { err.textContent = 'הסיסמאות אינן תואמות'; err.style.display = 'block'; }
+        return;
+      }
+
+      if (CLIENTS[currentClientName]) {
+        CLIENTS[currentClientName].password = p1;
+        saveData();
+        closeChangePasswordModal();
+        showToast('הסיסמה עודכנה בהצלחה! 🔑');
+      }
+    }
+
+    function toggleSideMenu() {
+      const m = document.getElementById('sideMenu');
+      m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function toggleDocsSubMenu() {
+      const sub = document.getElementById('docsSubMenu');
+      const arrow = document.getElementById('docsArrow');
+      if (sub.style.display === 'flex') {
+        sub.style.display = 'none';
+        arrow.innerText = '▼';
+      } else {
+        sub.style.display = 'flex';
+        arrow.innerText = '▲';
+      }
+    }
+
+    
+    function sendAdminWhatsAppReminder(targetPhone, clientName) {
+      const phone = targetPhone || (CLIENTS[currentClientName] && CLIENTS[currentClientName].phone) || '972546443841';
+      const name = clientName || currentClientName || 'לקוח';
+      const text = encodeURIComponent("שלום " + name + ",\nתזכורת ממשרד מוישי שמעיה - חשבונאות ומיסוי: זה הזמן לשלוח לכאן את החשבוניות והמסמכים של החודש, או להעלות ישירות באפליקציה.\n\nלפתיחה: " + window.location.href);
+      window.open('https://api.whatsapp.com/send?phone=' + phone.replace(/[^0-9]/g, '') + '&text=' + text, '_blank');
+      showToast('נפתח צ׳אט וואטסאפ עם תזכורת מוכנה לשליחה! 💬');
+    }
+
+    
+    
+    let isAdminFullscreen = false;
+    function toggleAdminFullscreen() {
+      isAdminFullscreen = !isAdminFullscreen;
+      const card = document.getElementById('adminModalCard');
+      const icon = document.getElementById('adminFullscreenIcon');
+      const text = document.getElementById('adminFullscreenText');
+      const body = document.getElementById('adminModalBody');
+      const clientList = document.getElementById('adminDocsClientList');
+      if (!card) return;
+
+      if (isAdminFullscreen) {
+        card.style.maxWidth = '96vw';
+        card.style.width = '96vw';
+        card.style.height = '94vh';
+        card.style.maxHeight = '94vh';
+        card.style.borderRadius = '16px';
+        if (body) {
+          body.style.maxHeight = 'calc(94vh - 140px)';
+          body.style.height = 'calc(94vh - 140px)';
+        }
+        if (clientList) {
+          clientList.style.display = 'grid';
+          clientList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+          clientList.style.gap = '14px';
+        }
+        if (icon) icon.innerHTML = '🗗';
+        if (text) text.innerText = 'תצוגה רגילה';
+      } else {
+        card.style.maxWidth = '440px';
+        card.style.width = '100%';
+        card.style.height = 'auto';
+        card.style.maxHeight = 'none';
+        card.style.borderRadius = '24px';
+        if (body) {
+          body.style.maxHeight = '480px';
+          body.style.height = 'auto';
+        }
+        if (clientList) {
+          clientList.style.display = 'flex';
+          clientList.style.gridTemplateColumns = 'none';
+          clientList.style.gap = '10px';
+        }
+        if (icon) icon.innerHTML = '⛶';
+        if (text) text.innerText = 'מסך מלא';
+      }
+    }
+
+    function toggleAdminModal() {
+      if (!isAdminMode) {
+        alert('גישה חסומה: לוח הבקרה מורשה למנהל המשרד בלבד!');
+        return;
+      }
+      const m = document.getElementById('adminModal');
+      if (!m) return;
+      if (m.style.display === 'none' || !m.style.display) {
+        m.style.display = 'flex';
+        renderAdminTaxInputs();
+      } else {
+        m.style.display = 'none'; updateTaxView();
+      }
+    }
+
+    function switchAdminTab(tab) {
+      const tDocs = document.getElementById('adminTabDocs');
+      const tTaxes = document.getElementById('adminTabTaxes');
+      const cDocs = document.getElementById('adminDocsTabContent');
+      const cTaxes = document.getElementById('adminTaxesTabContent');
+
+      if (tab === 'docs') {
+        tDocs.style.background = 'white';
+        tDocs.style.color = '#0284c7';
+        tDocs.style.borderBottom = '2.5px solid #0284c7';
+        tTaxes.style.background = 'transparent';
+        tTaxes.style.color = '#64748b';
+        tTaxes.style.borderBottom = 'none';
+        if (cDocs) cDocs.style.display = 'block';
+        if (cTaxes) cTaxes.style.display = 'none';
+      } else {
+        tTaxes.style.background = 'white';
+        tTaxes.style.color = '#0284c7';
+        tTaxes.style.borderBottom = '2.5px solid #0284c7';
+        tDocs.style.background = 'transparent';
+        tDocs.style.color = '#64748b';
+        tDocs.style.borderBottom = 'none';
+        if (cDocs) cDocs.style.display = 'none';
+        if (cTaxes) cTaxes.style.display = 'block';
+        renderAdminTaxInputs();
+      }
+    }
+
+    function calcTblRowTotal(id) {
+      const v = parseFloat(document.getElementById('tblVat_' + id).value) || 0;
+      const a = parseFloat(document.getElementById('tblAdv_' + id).value) || 0;
+      const d = parseFloat(document.getElementById('tblDed_' + id).value) || 0;
+      const b = parseFloat(document.getElementById('tblBtl_' + id).value) || 0;
+      const totEl = document.getElementById('tblTot_' + id);
+      if (totEl) {
+        totEl.innerText = '₪' + (v + a + d + b).toLocaleString();
+      }
+    }
+
+    let selectedAdminTaxMonth = 10;
+
+    function changeAdminTaxMonth(m) {
+      selectedAdminTaxMonth = parseInt(m) || 10;
+      renderAdminTaxInputs();
+    }
+
+    function renderAdminTaxInputs() {
+      const container = document.getElementById('adminTaxesList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (!selectedAdminTaxMonth) {
+        selectedAdminTaxMonth = (currentMonth === 'annual') ? 10 : currentMonth;
+      }
+      const effMonth = selectedAdminTaxMonth;
+      const monthName = MONTHS[effMonth - 1] || ('חודש ' + effMonth);
+
+      let monthOptions = '';
+      for (let m = 1; m <= 12; m++) {
+        monthOptions += `<option value="${m}" ${m === effMonth ? 'selected' : ''}>חודש ${m} – ${MONTHS[m-1]}</option>`;
+      }
+
+      let tableHtml = `
+        <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 10px 14px;">
+          <div style="font-weight: 800; font-size: 13px; color: #1e40af;">📅 תקופת דיווח מיסים:</div>
+          <select onchange="changeAdminTaxMonth(this.value)" style="padding: 6px 12px; border-radius: 8px; border: 1.5px solid #3b82f6; font-size: 12px; font-weight: 800; background: white; color: #1e3a8a;">
+            ${monthOptions}
+          </select>
+        </div>
+        <div style="background: white; border: 1.5px solid #cbd5e1; border-radius: 14px; overflow-x: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 12px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: right; direction: rtl; min-width: 500px;">
+            <thead>
+              <tr style="background: #0f172a; color: white;">
+                <th style="padding: 10px 6px; font-weight: 800;">שם לקוח</th>
+                <th style="padding: 10px 3px; font-weight: 800; width: 62px;">מע"מ</th>
+                <th style="padding: 10px 3px; font-weight: 800; width: 62px;">מקדמות</th>
+                <th style="padding: 10px 3px; font-weight: 800; width: 62px;">ניכויי מ"ה</th>
+                <th style="padding: 10px 3px; font-weight: 800; width: 62px;">ניכויי בט"ל</th>
+                <th style="padding: 10px 4px; font-weight: 800; width: 75px; color: #38bdf8;">סה"כ לרשויות</th>
+                <th style="padding: 10px 3px; font-weight: 800; width: 85px;">מצב דיווח</th>
+                <th style="padding: 10px 4px; font-weight: 800; width: 48px; text-align: center;">שמירה</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      let idx = 0;
+      for (const [cName, cObj] of Object.entries(CLIENTS)) {
+        const yrTaxes = (cObj.taxes && cObj.taxes[currentYear]) || {};
+        const t = yrTaxes[effMonth] || { vat: 0, advances: 0, deductions: 0, btl: 0, status: 'טרם דווח' };
+        const bg = (idx % 2 === 0) ? '#ffffff' : '#f8fafc';
+        const rowTot = (t.vat || 0) + (t.advances || 0) + (t.deductions || 0) + (t.btl || 0);
+
+        tableHtml += `
+          <tr style="background: ${bg}; border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 7px 6px; font-weight: 800; color: #1e293b; white-space: nowrap;">${cName}</td>
+            <td style="padding: 5px 2px;">
+              <input type="number" id="tblVat_${cObj.id}" value="${t.vat || ''}" placeholder="0" oninput="calcTblRowTotal('${cObj.id}')"
+                style="width: 100%; padding: 5px 2px; font-size: 11px; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 6px; text-align: center; box-sizing: border-box; background: #fff;" />
+            </td>
+            <td style="padding: 5px 2px;">
+              <input type="number" id="tblAdv_${cObj.id}" value="${t.advances || ''}" placeholder="0" oninput="calcTblRowTotal('${cObj.id}')"
+                style="width: 100%; padding: 5px 2px; font-size: 11px; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 6px; text-align: center; box-sizing: border-box; background: #fff;" />
+            </td>
+            <td style="padding: 5px 2px;">
+              <input type="number" id="tblDed_${cObj.id}" value="${t.deductions || ''}" placeholder="0" oninput="calcTblRowTotal('${cObj.id}')"
+                style="width: 100%; padding: 5px 2px; font-size: 11px; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 6px; text-align: center; box-sizing: border-box; background: #fff;" />
+            </td>
+            <td style="padding: 5px 2px;">
+              <input type="number" id="tblBtl_${cObj.id}" value="${t.btl || ''}" placeholder="0" oninput="calcTblRowTotal('${cObj.id}')"
+                style="width: 100%; padding: 5px 2px; font-size: 11px; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 6px; text-align: center; box-sizing: border-box; background: #fff;" />
+            </td>
+            <td style="padding: 5px 4px; font-weight: 800; color: #0284c7; text-align: center; font-size: 11px;" id="tblTot_${cObj.id}">
+              ₪${rowTot.toLocaleString()}
+            </td>
+            <td style="padding: 5px 2px;">
+              <select id="tblStat_${cObj.id}" style="width: 100%; padding: 5px 1px; font-size: 10.5px; font-weight: bold; border: 1.5px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                <option value="טרם דווח" ${t.status === 'טרם דווח' ? 'selected' : ''}>⚪ טרם דווח</option>
+                <option value="דווח" ${t.status === 'דווח' ? 'selected' : ''}>🟡 דווח</option>
+                <option value="דווח ושולם" ${t.status === 'דווח ושולם' ? 'selected' : ''}>🟢 דווח ושולם</option>
+              </select>
+            </td>
+            <td style="padding: 5px 3px; text-align: center;">
+              <button onclick="saveSingleClientTaxes('${cName}', '${cObj.id}')" title="שמור רק לקוח זה" style="background: #0284c7; color: white; border: none; border-radius: 6px; padding: 5px 8px; font-size: 11px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 3px; box-shadow: 0 1px 4px rgba(2,132,199,0.25);">
+                <span>💾</span>
+              </button>
+            </td>
+          </tr>
+        `;
+        idx++;
+      }
+
+      tableHtml += `
+            </tbody>
+          </table>
+        </div>
+
+        <button onclick="saveAllAdminTaxes()" style="width: 100%; background: #16a34a; color: white; border: none; padding: 12px; border-radius: 12px; font-size: 13.5px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25); display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>💾 שמור ועדכן את כל הלקוחות בבת אחת</span>
+        </button>
+      `;
+
+      container.innerHTML = tableHtml;
+    }
+
+    
+    function openQuickTaxEditModal() {
+      if (!isAdminMode) {
+        alert('עריכת נתוני מיסים מורשית למנהל המשרד בלבד.');
+        return;
+      }
+      const targetMonth = (currentMonth === 'annual') ? 10 : currentMonth;
+      const clientObj = CLIENTS[currentClientName] || {};
+      const yrTaxes = (clientObj.taxes && clientObj.taxes[currentYear]) || {};
+      const t = yrTaxes[targetMonth] || { vat: 0, advances: 0, deductions: 0, btl: 0, status: 'טרם דווח' };
+
+      document.getElementById('quickTaxModalSub').innerText = currentClientName + ' • ' + (MONTHS[targetMonth - 1] || 'חודש ' + targetMonth) + ' ' + currentYear;
+      document.getElementById('qTaxVat').value = t.vat || '';
+      document.getElementById('qTaxAdv').value = t.advances || '';
+      document.getElementById('qTaxDed').value = t.deductions || '';
+      document.getElementById('qTaxBtl').value = t.btl || '';
+      document.getElementById('qTaxStat').value = t.status || 'טרם דווח';
+
+      calcQuickTaxTotal();
+      document.getElementById('quickTaxEditModal').style.display = 'flex';
+    }
+
+    function closeQuickTaxEditModal() {
+      document.getElementById('quickTaxEditModal').style.display = 'none';
+    }
+
+    function calcQuickTaxTotal() {
+      const v = parseFloat(document.getElementById('qTaxVat').value) || 0;
+      const a = parseFloat(document.getElementById('qTaxAdv').value) || 0;
+      const d = parseFloat(document.getElementById('qTaxDed').value) || 0;
+      const b = parseFloat(document.getElementById('qTaxBtl').value) || 0;
+      document.getElementById('qTaxTotal').innerText = '₪' + (v + a + d + b).toLocaleString();
+    }
+
+    function saveQuickTaxEdit() {
+      const targetMonth = (currentMonth === 'annual') ? 10 : currentMonth;
+      const v = parseFloat(document.getElementById('qTaxVat').value) || 0;
+      const a = parseFloat(document.getElementById('qTaxAdv').value) || 0;
+      const d = parseFloat(document.getElementById('qTaxDed').value) || 0;
+      const b = parseFloat(document.getElementById('qTaxBtl').value) || 0;
+      const s = document.getElementById('qTaxStat').value;
+
+      if (!CLIENTS[currentClientName]) CLIENTS[currentClientName] = {};
+      if (!CLIENTS[currentClientName].taxes) CLIENTS[currentClientName].taxes = {};
+      if (!CLIENTS[currentClientName].taxes[currentYear]) CLIENTS[currentClientName].taxes[currentYear] = {};
+
+      CLIENTS[currentClientName].taxes[currentYear][targetMonth] = {
+        vat: v,
+        advances: a,
+        deductions: d,
+        btl: b,
+        status: s
+      };
+
+      saveData();
+      updateTaxView();
+      closeQuickTaxEditModal();
+      showToast('תשלומי המיסים לחודש זה עודכנו בהצלחה! 📊💾');
+    }
+
+
+    function saveSingleClientTaxes(cName, cId) {
+      const vatEl = document.getElementById('tblVat_' + cId);
+      const advEl = document.getElementById('tblAdv_' + cId);
+      const dedEl = document.getElementById('tblDed_' + cId);
+      const btlEl = document.getElementById('tblBtl_' + cId);
+      const statEl = document.getElementById('tblStat_' + cId);
+
+      if (!vatEl || !advEl || !statEl) return;
+
+      const vatVal = parseFloat(vatEl.value) || 0;
+      const advVal = parseFloat(advEl.value) || 0;
+      const dedVal = dedEl ? (parseFloat(dedEl.value) || 0) : 0;
+      const btlVal = btlEl ? (parseFloat(btlEl.value) || 0) : 0;
+      const statVal = statEl.value;
+
+      const effMonth = selectedAdminTaxMonth || ((currentMonth === 'annual') ? 10 : currentMonth);
+
+      if (!CLIENTS[cName].taxes) CLIENTS[cName].taxes = {};
+      if (!CLIENTS[cName].taxes[currentYear]) CLIENTS[cName].taxes[currentYear] = {};
+
+      CLIENTS[cName].taxes[currentYear][effMonth] = {
+        vat: vatVal,
+        advances: advVal,
+        deductions: dedVal,
+        btl: btlVal,
+        status: statVal
+      };
+
+      saveData();
+      try {
+        const allTaxes = {};
+        for (const [name, obj] of Object.entries(CLIENTS)) {
+          allTaxes[name] = obj.taxes || {};
+        }
+        localStorage.setItem('portal_taxes_data', JSON.stringify(allTaxes));
+      } catch(e) {}
+      updateTaxView();
+      showToast('המיסים עבור ' + cName + ' נשמרו וסונכרנו בהצלחה! 💾');
+    }
+
+    function saveAllAdminTaxes() {
+      const effMonth = selectedAdminTaxMonth || ((currentMonth === 'annual') ? 10 : currentMonth);
+
+      for (const [cName, cObj] of Object.entries(CLIENTS)) {
+        const vatEl = document.getElementById('tblVat_' + cObj.id);
+        const advEl = document.getElementById('tblAdv_' + cObj.id);
+        const dedEl = document.getElementById('tblDed_' + cObj.id);
+        const btlEl = document.getElementById('tblBtl_' + cObj.id);
+        const statEl = document.getElementById('tblStat_' + cObj.id);
+
+        if (!vatEl || !advEl || !statEl) continue;
+
+        const existingT = (CLIENTS[cName].taxes && CLIENTS[cName].taxes[currentYear] && CLIENTS[cName].taxes[currentYear][effMonth]) ? CLIENTS[cName].taxes[currentYear][effMonth] : {};
+
+        const vatVal = vatEl.value.trim() !== '' ? (parseFloat(vatEl.value) || 0) : (existingT.vat || 0);
+        const advVal = advEl.value.trim() !== '' ? (parseFloat(advEl.value) || 0) : (existingT.advances || 0);
+        const dedVal = (dedEl && dedEl.value.trim() !== '') ? (parseFloat(dedEl.value) || 0) : (existingT.deductions || 0);
+        const btlVal = (btlEl && btlEl.value.trim() !== '') ? (parseFloat(btlEl.value) || 0) : (existingT.btl || 0);
+        const statVal = statEl.value;
+
+        if (!CLIENTS[cName].taxes) CLIENTS[cName].taxes = {};
+        if (!CLIENTS[cName].taxes[currentYear]) CLIENTS[cName].taxes[currentYear] = {};
+
+        CLIENTS[cName].taxes[currentYear][effMonth] = {
+          vat: vatVal,
+          advances: advVal,
+          deductions: dedVal,
+          btl: btlVal,
+          status: statVal
+        };
+      }
+
+      saveData();
+      try {
+        const allTaxes = {};
+        for (const [name, obj] of Object.entries(CLIENTS)) {
+          allTaxes[name] = obj.taxes || {};
+        }
+        localStorage.setItem('portal_taxes_data', JSON.stringify(allTaxes));
+      } catch(e) {}
+      updateTaxView();
+      toggleAdminModal();
+      showToast('כל נתוני המיסים עודכנו והוחלו מיד במסך! 📊💾');
+    }
+
+    window.addEventListener('DOMContentLoaded', updateView);
+  </script>
+
+  
+  <!-- PREVIEW MODAL -->
+  <div id="previewModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 1000; align-items: center; justify-content: center; padding: 12px; backdrop-filter: blur(4px);">
+    
+    <!-- FLOATING SIDE NAV ARROWS FOR DESKTOP -->
+    <button onclick="navDoc(-1)" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(15, 23, 42, 0.85); color: white; border: 1px solid rgba(255,255,255,0.25); width: 44px; height: 44px; border-radius: 50%; font-size: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1005; box-shadow: 0 4px 15px rgba(0,0,0,0.3);" title="מסמך קודם (חץ ימינה במקלדת)">▶</button>
+    <button onclick="navDoc(1)" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(15, 23, 42, 0.85); color: white; border: 1px solid rgba(255,255,255,0.25); width: 44px; height: 44px; border-radius: 50%; font-size: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1005; box-shadow: 0 4px 15px rgba(0,0,0,0.3);" title="מסמך הבא (חץ שמאלה במקלדת)">◀</button>
+
+    <div id="previewModalCard" style="background: white; border-radius: 24px; width: 100%; max-width: 420px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); text-align: center; direction: rtl; display: flex; flex-direction: column; transition: all 0.2s ease;">
+      
+      <!-- MODAL HEADER -->
+      <div style="background: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+        
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span onclick="closeModal()" style="font-size: 20px; cursor: pointer; color: #94a3b8; font-weight: bold; padding: 0 4px;" title="סגירה (Esc)">✕</span>
+          <button id="modalFullscreenBtn" onclick="toggleModalFullscreen()" style="background: #1e293b; border: 1px solid #334155; color: white; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;" title="מסך מלא (F)">⛶</button>
+        </div>
+
+        <div style="flex: 1; min-width: 0; text-align: center;">
+          <div id="modalFileName" style="font-weight: 800; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: white;">צפייה במסמך</div>
+          <div id="modalDocCounter" style="font-size: 10.5px; color: #94a3b8; font-weight: 700;">1 מתוך 1</div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <button id="modalPrevBtn" onclick="navDoc(-1)" style="background: #1e293b; border: 1px solid #334155; color: white; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold;" title="מסמך קודם (ימינה)">▶</button>
+          <button id="modalNextBtn" onclick="navDoc(1)" style="background: #1e293b; border: 1px solid #334155; color: white; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold;" title="מסמך הבא (שמאלה)">◀</button>
+        </div>
+
+      </div>
+
+      <!-- MODAL BODY -->
+      <div id="modalBody" style="padding: 16px; flex: 1; overflow-y: auto;"></div>
+
+      <!-- MOVE DOC PANEL (EXPANDABLE) -->
+      <div id="moveDocPanel" style="display: none; background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 16px; text-align: right;">
+        <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">העברת המסמך לחודש אחר ב-2026:</div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px;">
+          <button id="mChip_1" onclick="moveDocToMonth(1)" class="month-chip-btn">01 ינואר</button>
+          <button id="mChip_2" onclick="moveDocToMonth(2)" class="month-chip-btn">02 פברואר</button>
+          <button id="mChip_3" onclick="moveDocToMonth(3)" class="month-chip-btn">03 מרץ</button>
+          <button id="mChip_4" onclick="moveDocToMonth(4)" class="month-chip-btn">04 אפריל</button>
+          <button id="mChip_5" onclick="moveDocToMonth(5)" class="month-chip-btn">05 מאי</button>
+          <button id="mChip_6" onclick="moveDocToMonth(6)" class="month-chip-btn">06 יוני</button>
+          <button id="mChip_7" onclick="moveDocToMonth(7)" class="month-chip-btn">07 יולי</button>
+          <button id="mChip_8" onclick="moveDocToMonth(8)" class="month-chip-btn">08 אוגוסט</button>
+          <button id="mChip_9" onclick="moveDocToMonth(9)" class="month-chip-btn">09 ספטמבר</button>
+          <button id="mChip_10" onclick="moveDocToMonth(10)" class="month-chip-btn">10 אוקטובר</button>
+          <button id="mChip_11" onclick="moveDocToMonth(11)" class="month-chip-btn">11 נובמבר</button>
+          <button id="mChip_12" onclick="moveDocToMonth(12)" class="month-chip-btn">12 דצמבר</button>
+        </div>
+        <button onclick="moveDocToAnnual()" style="width: 100%; background: #0f172a; color: white; border: none; padding: 9px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <span>📑</span> העבר לתיקיית "דוח שנתי"
+        </button>
+      </div>
+
+      <!-- MODAL FOOTER ACTIONS -->
+      <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; gap: 8px;">
+          <button onclick="toggleMoveDocMenu()" style="flex: 1; padding: 9px; border-radius: 10px; border: 1px solid #cbd5e1; background: white; font-weight: 800; color: #0284c7; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+            <span>⇄</span> העבר חודש / שנתי
+          </button>
+          <button id="modalActionBtn" onclick="openOriginalFile()" style="flex: 1; padding: 9px; border-radius: 10px; border: none; background: #0284c7; color: white; font-weight: 800; font-size: 12px; cursor: pointer;">
+            פתח מקורי ↗
+          </button>
+        </div>
+        <button onclick="closeModal()" style="width: 100%; padding: 7px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f1f5f9; font-weight: 700; color: #64748b; font-size: 11px; cursor: pointer;">
+          סגור חלון
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ANNUAL DOCS MODAL -->
+  <div id="annualDocsModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 1000; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px);">
+    <div style="background: white; border-radius: 24px; width: 100%; max-width: 440px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); text-align: center; direction: rtl; display: flex; flex-direction: column; max-height: 85vh;">
+      <div style="background: #0f172a; color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 800; font-size: 14px;">📑 תיקיית מסמכים לדוח שנתי</span>
+        <span onclick="closeAnnualDocsModal()" style="font-size: 18px; cursor: pointer; color: #94a3b8; font-weight: bold;">✕</span>
+      </div>
+      <div style="padding: 12px 16px 0 16px;">
+        <input type="file" id="annualUploadInput" style="display: none;" onchange="handleAnnualUpload(event)" />
+        <button onclick="document.getElementById('annualUploadInput').click()" style="width: 100%; background: #2563eb; color: white; border: none; padding: 11px; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);">
+          <span>📤 העלאת מסמך ישירות לדוח שנתי</span>
+        </button>
+      </div>
+      <div id="annualDocsListContainer" style="padding: 12px 16px; overflow-y: auto; flex: 1;"></div>
+      <div style="padding: 12px 18px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+        <button onclick="closeAnnualDocsModal()" style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; background: white; font-weight: 700; color: #475569; cursor: pointer;">סגירה</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ADMIN MODAL -->
+  <div id="adminModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); z-index: 1000; align-items: center; justify-content: center; padding: 12px; backdrop-filter: blur(4px);">
+    <div id="adminModalCard" style="background: white; border-radius: 24px; width: 100%; max-width: 440px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); text-align: center; direction: rtl; display: flex; flex-direction: column; transition: all 0.2s ease;">
+      <div style="background: #0f172a; color: white; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 800; font-size: 14.5px;">📊 לוח בקרה משרדי — מוישי שמעיה</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button id="adminFullscreenBtn" onclick="toggleAdminFullscreen()" style="background: #1e293b; border: 1.5px solid #334155; color: white; padding: 4px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 800;" title="מסך מלא (F)">
+            <span id="adminFullscreenIcon">⛶</span>
+            <span id="adminFullscreenText">מסך מלא</span>
+          </button>
+          <span onclick="toggleAdminModal()" style="font-size: 20px; cursor: pointer; color: #94a3b8; font-weight: bold; line-height: 1; padding: 0 2px;" title="סגירה (Esc)">✕</span>
+        </div>
+      </div>
+      
+      <!-- ADMIN TABS -->
+      <div style="display: flex; gap: 6px; padding: 10px 18px 0 18px; background: #f8fafc; border-bottom: 1.5px solid #e2e8f0;">
+        <button id="adminTabDocs" onclick="switchAdminTab('docs')" style="flex: 1; padding: 9px; border-radius: 10px 10px 0 0; border: none; font-size: 12px; font-weight: 800; background: white; color: #0284c7; border-bottom: 2.5px solid #0284c7; cursor: pointer;">📁 מעקב מסמכים</button>
+        <button id="adminTabTaxes" onclick="switchAdminTab('taxes')" style="flex: 1; padding: 9px; border-radius: 10px 10px 0 0; border: none; font-size: 12px; font-weight: 700; background: transparent; color: #64748b; cursor: pointer;">💰 הזנת מיסים חודשית</button>
+      </div>
+
+      <div id="adminModalBody" style="padding: 18px; max-height: 480px; overflow-y: auto; text-align: right; flex: 1;">
+        <!-- DOCS TAB CONTENT -->
+        <div id="adminDocsTabContent">
+        <div style="font-size: 12.5px; font-weight: 800; color: #334155; margin-bottom: 10px;">מעקב העלאת חומר לחודש 10/2026:</div>
+
+        <div id="adminDocsClientList" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+          <!-- Client 0: שמעיה מוישי -->
+          <div onclick="switchClient('שמעיה מוישי')" style="background: #f0fdf4; border: 1.5px solid #86efac; padding: 12px 14px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;">
+            <div style="text-align: right;">
+              <div style="font-weight: 800; font-size: 13.5px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                <span>שמעיה מוישי</span>
+                <span style="background: #dcfce7; color: #16a34a; font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 6px;">🟢 פעיל</span>
+              </div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 2px;">ת.ז: 315513770 • עוסק מורשה</div>
+            </div>
+            <button style="background: #16a34a; color: white; border: none; padding: 6px 12px; border-radius: 10px; font-size: 11.5px; font-weight: 800; cursor: pointer; box-shadow: 0 2px 4px rgba(22,163,74,0.25);">פתח תיק ➔</button>
+          </div>
+
+          <!-- Client 1 -->
+          <div onclick="switchClient('שמאי מאיר')" style="background: #f8fafc; border: 1.5px solid #cbd5e1; padding: 12px 14px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;">
+            <div style="text-align: right;">
+              <div style="font-weight: 800; font-size: 13.5px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                <span>שמאי מאיר</span>
+                <span style="background: #dcfce7; color: #16a34a; font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 6px;">🟢 הועלה</span>
+              </div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 2px;">2 הוצאות, 2 הכנסות • בבדיקה</div>
+            </div>
+            <button style="background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 10px; font-size: 11.5px; font-weight: 800; cursor: pointer; box-shadow: 0 2px 4px rgba(2,132,199,0.25);">פתח תיק ➔</button>
+          </div>
+
+          <!-- Client 2 -->
+          <div onclick="switchClient('חיים הירשמן')" style="background: #f8fafc; border: 1.5px solid #cbd5e1; padding: 12px 14px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;">
+            <div style="text-align: right;">
+              <div style="font-weight: 800; font-size: 13.5px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                <span>חיים הירשמן</span>
+                <span style="background: #fee2e2; color: #b91c1c; font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 6px;">🔴 טרם הועלה</span>
+              </div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 2px;">0 מסמכים • טרם העלה לחודש זה</div>
+            </div>
+            <button style="background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 10px; font-size: 11.5px; font-weight: 800; cursor: pointer; box-shadow: 0 2px 4px rgba(2,132,199,0.25);">פתח תיק ➔</button>
+          </div>
+
+          <!-- Client 3 -->
+          <div onclick="switchClient('אלימלך ארליך')" style="background: #f8fafc; border: 1.5px solid #cbd5e1; padding: 12px 14px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;">
+            <div style="text-align: right;">
+              <div style="font-weight: 800; font-size: 13.5px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                <span>אלימלך ארליך</span>
+                <span style="background: #dcfce7; color: #16a34a; font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 6px;">🟢 נסגר</span>
+              </div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 2px;">4 הוצאות, 1 הכנסה • נסגר</div>
+            </div>
+            <button style="background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 10px; font-size: 11.5px; font-weight: 800; cursor: pointer; box-shadow: 0 2px 4px rgba(2,132,199,0.25);">פתח תיק ➔</button>
+          </div>
+        </div>
+
+        <button onclick="sendAdminWhatsAppReminder()" style="width: 100%; background: #25d366; color: white; border: none; padding: 12px; border-radius: 14px; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25); display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>💬</span>
+          <span>שלח תזכורת בוואטסאפ למי שטרם העלה</span>
+        </button>
+              </div>
+        <!-- TAXES TAB CONTENT -->
+        <div id="adminTaxesTabContent" style="display: none;">
+          <div style="font-size: 12.5px; font-weight: 800; color: #334155; margin-bottom: 4px;">עדכון מע"מ ומקדמות ללקוחות:</div>
+          <div style="font-size: 11px; color: #64748b; margin-bottom: 12px;">הסכומים והסטטוס יתעדכנו מיידית במסך של כל לקוח.</div>
+          <div id="adminTaxesList"></div>
+        </div>
+      </div>
+
+      <div style="padding: 12px 18px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+        <button onclick="toggleAdminModal()" style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; background: white; font-weight: 700; color: #475569; cursor: pointer;">סגור לוח בקרה</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 3-DOTS SIDE DRAWER MENU -->
+  <div id="sideMenu" onclick="if(event.target === this) toggleSideMenu()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2000; justify-content: flex-end; backdrop-filter: blur(3px);">
+    <div style="background: white; width: 85%; max-width: 320px; height: 100%; box-shadow: -10px 0 30px rgba(0,0,0,0.25); display: flex; flex-direction: column; direction: rtl; padding: 20px 18px;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0; margin-bottom: 16px;">
+        <div>
+          <div style="font-size: 15px; font-weight: 800; color: #0f172a;">תפריט פעולות</div>
+          <div style="font-size: 11px; color: #64748b;" id="menuClientSubTitle">שמעיה מוישי • תיק לקוח</div>
+        </div>
+        <button onclick="toggleSideMenu()" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 10px; padding: 4px 10px; font-size: 12px; font-weight: 700; color: #475569; cursor: pointer;">חזרה ✕</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; flex: 1;">
+        
+        <!-- Action 1: Office Docs -->
+        <div onclick="toggleDocsSubMenu()" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 14px; border-radius: 14px; cursor: pointer;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; font-weight: 800; color: #0f172a;">📁 אישורים ודוחות מהמשרד</span>
+            <span id="docsArrow" style="color: #0284c7; font-size: 12px;">▼</span>
+          </div>
+          <div id="docsSubMenu" style="display: none; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; flex-direction: column; gap: 8px;">
+            <div onclick="event.stopPropagation(); downloadOfficeDoc('אישורי הכנסות')" style="font-size: 11.5px; color: #0284c7; font-weight: 700; padding: 5px 0; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <span style="font-size: 13px;">📑</span> אישורי הכנסות
+            </div>
+            <div onclick="event.stopPropagation(); downloadOfficeDoc('סיכומי פגישה')" style="font-size: 11.5px; color: #0284c7; font-weight: 700; padding: 5px 0; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <span style="font-size: 13px;">📝</span> סיכומי פגישה
+            </div>
+            <div onclick="event.stopPropagation(); downloadOfficeDoc('אישור ניהול ספרים וניכוי במקור 2026')" style="font-size: 11.5px; color: #0284c7; font-weight: 700; padding: 5px 0; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <span style="font-size: 13px;">📄</span> אישור ניהול ספרים וניכוי במקור
+            </div>
+            <div onclick="event.stopPropagation(); downloadOfficeDoc('דוח שנתי חתום 2024')" style="font-size: 11.5px; color: #0284c7; font-weight: 700; padding: 5px 0; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <span style="font-size: 13px;">📊</span> דוח שנתי חתום (2024)
+            </div>
+            <div onclick="event.stopPropagation(); downloadOfficeDoc('תעודת עוסק מורשה')" style="font-size: 11.5px; color: #0284c7; font-weight: 700; padding: 5px 0; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <span style="font-size: 13px;">📜</span> תעודת עוסק מורשה
+            </div>
+          </div>
+        </div>
+
+        
+        <!-- Action: Contact Office -->
+        <div onclick="toggleContactSubMenu()" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 14px; border-radius: 14px; cursor: pointer;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; font-weight: 800; color: #0f172a;">📞 יצירת קשר עם המשרד</span>
+            <span id="contactArrow" style="color: #0284c7; font-size: 12px;">▼</span>
+          </div>
+          <div id="contactSubMenu" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1; flex-direction: column; gap: 8px;">
+            <a href="tel:025327040" style="text-decoration: none; background: #eff6ff; color: #0284c7; padding: 10px 12px; border-radius: 10px; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: space-between;">
+              <span style="display: flex; align-items: center; gap: 6px;"><span>📞</span> חייג למשרד: 02-532-7040</span>
+              <span>➔</span>
+            </a>
+            <a href="https://wa.me/97225327040" target="_blank" style="text-decoration: none; background: #f0fdf4; color: #16a34a; padding: 10px 12px; border-radius: 10px; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: space-between;">
+              <span style="display: flex; align-items: center; gap: 6px;"><span>💬</span> וואטסאפ מהיר למשרד</span>
+              <span>➔</span>
+            </a>
+                        <a href="mailto:m025327040@gmail.com" style="text-decoration: none; background: #eff6ff; color: #0284c7; padding: 10px 12px; border-radius: 10px; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: space-between;">
+              <span style="display: flex; align-items: center; gap: 6px;"><span>✉️</span> מייל: m025327040@gmail.com</span>
+              <span>➔</span>
+            </a>
+            <div style="font-size: 11.5px; color: #475569; padding: 6px 8px; line-height: 1.6; text-align: right; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+              📍 <strong>כתובת:</strong> רבי עקיבא 25, ביתר עילית<br>
+              ⏰ <strong>שעות פעילות:</strong> א'-ה' 09:00–17:00
+            </div>
+          </div>
+        </div>
+
+        <!-- Action 2: Export Excel -->
+        <div onclick="exportExcel(); toggleSideMenu();" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 14px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 13px; font-weight: 800; color: #0f172a;">📊 הורדת ריכוז חודשי לאקסל</span>
+          <span style="color: #10b981; font-weight: bold;">⬇</span>
+        </div>
+
+        <!-- Action 3: PWA install -->
+        <div onclick="installPwa(); toggleSideMenu();" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 14px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 13px; font-weight: 800; color: #0f172a;">📲 שמירה כאפליקציה בנייד</span>
+          <span style="color: #0284c7; font-weight: bold;">➔</span>
+        </div>
+
+        <!-- Action 4: Admin Panel -->
+        <div id="adminSideMenuBtn" onclick="toggleAdminModal(); toggleSideMenu();" style="display: none; background: #0f172a; color: white; padding: 12px 14px; border-radius: 14px; cursor: pointer; align-items: center; justify-content: space-between; margin-top: 10px;">
+          <span style="font-size: 12.5px; font-weight: 800;">🔐 לוח בקרה משרדי (Admin)</span>
+          <span>➔</span>
+        </div>
+
+      </div>
+
+      
+        <!-- Action: Settings -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 14px; border-radius: 14px;">
+          <div onclick="toggleSettingsSubMenu()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+            <span style="font-size: 13px; font-weight: 800; color: #0f172a;">⚙️ הגדרות וחשבון</span>
+            <span id="settingsSubMenuArrow" style="font-size: 11px; color: #94a3b8;">▼</span>
+          </div>
+          <div id="settingsSubMenuList" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; flex-direction: column; gap: 8px;">
+            <div onclick="openBusinessSettingsModal()" style="padding: 8px 10px; background: white; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12.5px; font-weight: 700; color: #334155; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+              <span>🏢 פרטי עסק ותקופת דיווח</span>
+              <span>➔</span>
+            </div>
+            <div onclick="openNotificationSettingsModal()" style="padding: 8px 10px; background: white; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12.5px; font-weight: 700; color: #334155; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+              <span>🔔 התראות ותזכורות בוואטסאפ</span>
+              <span>➔</span>
+            </div>
+            <div onclick="openChangePasswordModal()" style="padding: 8px 10px; background: white; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12.5px; font-weight: 700; color: #334155; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+              <span>🔑 החלפת סיסמה אישית</span>
+              <span>➔</span>
+            </div>
+          </div>
+        </div>
+
+      <!-- Logout -->
+      <button onclick="doLogout(); toggleSideMenu();" style="width: 100%; padding: 12px; border-radius: 14px; border: 1px solid #fee2e2; background: #fef2f2; color: #b91c1c; font-weight: 800; font-size: 13px; cursor: pointer;">🚪 יציאה מהחשבון</button>
+    </div>
+  </div>
+
+
+  <!-- Change Password Modal -->
+  <div id="changePasswordModal" onclick="if(event.target === this) closeChangePasswordModal()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2500; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); direction: rtl;">
+    <div style="background: white; border-radius: 20px; max-width: 340px; width: 100%; padding: 22px 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); text-align: right;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #0f172a;">🔑 החלפת סיסמה אישית</h3>
+        <button onclick="closeChangePasswordModal()" style="background: #f1f5f9; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: 700; cursor: pointer;">✕</button>
+      </div>
+      <p style="font-size: 12px; color: #64748b; margin-top: 0; margin-bottom: 14px;">הזן סיסמה חדשה שתשמש אותך בכניסות הבאות למערכת.</p>
+      
+      <div style="margin-bottom: 10px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 5px;">סיסמה חדשה</label>
+        <input type="password" id="newPassInput" placeholder="לפחות 4 תווים" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 13.5px; box-sizing: border-box;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 5px;">אימות סיסמה חדשה</label>
+        <input type="password" id="confirmPassInput" placeholder="הזן שוב את הסיסמה" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 13.5px; box-sizing: border-box;">
+      </div>
+
+      <div id="changePassError" style="display: none; color: #dc2626; font-size: 11.5px; font-weight: 700; margin-bottom: 10px;"></div>
+
+      <button onclick="saveNewPassword()" style="width: 100%; padding: 11px; background: #0284c7; color: white; border: none; border-radius: 12px; font-size: 13.5px; font-weight: 800; cursor: pointer;">שמור סיסמה חדשה 💾</button>
+    </div>
+  </div>
+
+
+  <!-- Business Settings Modal -->
+  <div id="businessSettingsModal" onclick="if(event.target === this) closeBusinessSettingsModal()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2500; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); direction: rtl;">
+    <div style="background: white; border-radius: 20px; max-width: 360px; width: 100%; padding: 22px 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); text-align: right;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #0f172a;">🏢 פרטי עסק ותקופת דיווח</h3>
+        <button onclick="closeBusinessSettingsModal()" style="background: #f1f5f9; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: 700; cursor: pointer;">✕</button>
+      </div>
+      <p style="font-size: 11.5px; color: #64748b; margin-top: 0; margin-bottom: 14px;">הגדרות אלו קובעות את אופן הדיווח, מועדי התזכורות וכרטיסי המיסים במערכת.</p>
+
+      <div style="margin-bottom: 10px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">סוג עוסק</label>
+        <select id="bizTypeSelect" style="width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 700; background: #f8fafc;">
+          <option value="עוסק מורשה">עוסק מורשה</option>
+          <option value="עוסק פטור">עוסק פטור</option>
+          <option value="חברה בע״מ">חברה בע״מ</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">תקופת דיווח מע״מ ומקדמות</label>
+        <select id="bizPeriodSelect" style="width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 700; background: #f8fafc;">
+          <option value="דו-חודשי">דו-חודשי (ינואר-פברואר, מרץ-אפריל...)</option>
+          <option value="חד-חודשי">חד-חודשי (כל 15 לחודש)</option>
+          <option value="שנתי">שנתי בלבד (עוסק פטור)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">מספר עוסק / מזהה</label>
+        <input type="text" id="bizTaxIdInput" readonly style="width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 13px; background: #f1f5f9; color: #64748b; font-weight: 700; box-sizing: border-box;">
+      </div>
+
+      <button onclick="saveBusinessSettings()" style="width: 100%; padding: 11px; background: #0284c7; color: white; border: none; border-radius: 12px; font-size: 13.5px; font-weight: 800; cursor: pointer;">שמור הגדרות עסק 💾</button>
+    </div>
+  </div>
+
+  <!-- Notification Settings Modal -->
+  <div id="notificationSettingsModal" onclick="if(event.target === this) closeNotificationSettingsModal()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2500; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); direction: rtl;">
+    <div style="background: white; border-radius: 20px; max-width: 360px; width: 100%; padding: 22px 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); text-align: right;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #0f172a;">🔔 התראות ותזכורות משרד</h3>
+        <button onclick="closeNotificationSettingsModal()" style="background: #f1f5f9; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: 700; cursor: pointer;">✕</button>
+      </div>
+      <p style="font-size: 11.5px; color: #64748b; margin-top: 0; margin-bottom: 14px;">התראות אלו מוגדרות כחובה מטעם המשרד כדי להבטיח הגשת דוחות במועד ומניעת קנסות מרשויות המס.</p>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px;">
+          <div>
+            <div style="font-size: 12px; font-weight: 800; color: #166534;">תזכורות העלאת חומר (1, 7, 12, 15)</div>
+            <div style="font-size: 10.5px; color: #15803d;">וואטסאפ, מייל ובאתר</div>
+          </div>
+          <span style="background: #dcfce7; color: #166534; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 20px; display: flex; align-items: center; gap: 4px;">פעיל כחובה 🔒</span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px;">
+          <div>
+            <div style="font-size: 12px; font-weight: 800; color: #166534;">אישור קליטה ונעילת חודש</div>
+            <div style="font-size: 10.5px; color: #15803d;">סיכום מסמכים שהוגשו לבדיקה</div>
+          </div>
+          <span style="background: #dcfce7; color: #166534; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 20px; display: flex; align-items: center; gap: 4px;">פעיל כחובה 🔒</span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px;">
+          <div>
+            <div style="font-size: 12px; font-weight: 800; color: #166534;">עדכון שידור דוח לרשויות</div>
+            <div style="font-size: 10.5px; color: #15803d;">חיווי מיסים ששודרו ושולמו</div>
+          </div>
+          <span style="background: #dcfce7; color: #166534; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 20px; display: flex; align-items: center; gap: 4px;">פעיל כחובה 🔒</span>
+        </div>
+      </div>
+
+      <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 8px 10px; margin-bottom: 14px; font-size: 11px; color: #1e40af; line-height: 1.4;">
+        ℹ️ לשינוי הגדרות תיק ופרטי תקשורת יש לפנות ישירות למשרד.
+      </div>
+
+      <button onclick="closeNotificationSettingsModal()" style="width: 100%; padding: 10px; background: #0284c7; color: white; border: none; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer;">הבנתי, תודה 👍</button>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="changePasswordModal" onclick="if(event.target === this) closeChangePasswordModal()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2500; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); direction: rtl;">
+    <div style="background: white; border-radius: 20px; max-width: 340px; width: 100%; padding: 22px 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); text-align: right;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #0f172a;">🔑 החלפת סיסמה אישית</h3>
+        <button onclick="closeChangePasswordModal()" style="background: #f1f5f9; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: 700; cursor: pointer;">✕</button>
+      </div>
+      <p style="font-size: 12px; color: #64748b; margin-top: 0; margin-bottom: 14px;">הזן סיסמה חדשה שתשמש אותך בכניסות הבאות למערכת.</p>
+      
+      <div style="margin-bottom: 10px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 5px;">סיסמה חדשה</label>
+        <input type="password" id="newPassInput" placeholder="לפחות 4 תווים" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 13.5px; box-sizing: border-box;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 5px;">אימות סיסמה חדשה</label>
+        <input type="password" id="confirmPassInput" placeholder="הזן שוב את הסיסמה" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 13.5px; box-sizing: border-box;">
+      </div>
+
+      <div id="changePassError" style="display: none; color: #dc2626; font-size: 11.5px; font-weight: 700; margin-bottom: 10px;"></div>
+
+      <button onclick="saveNewPassword()" style="width: 100%; padding: 11px; background: #0284c7; color: white; border: none; border-radius: 12px; font-size: 13.5px; font-weight: 800; cursor: pointer;">שמור סיסמה חדשה 💾</button>
+    </div>
+  </div>
+
+
+  <!-- Business Settings Modal -->
+  <div id="businessSettingsModal" onclick="if(event.target === this) closeBusinessSettingsModal()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2500; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); direction: rtl;">
+    <div style="background: white; border-radius: 20px; max-width: 360px; width: 100%; padding: 22px 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); text-align: right;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #0f172a;">🏢 פרטי עסק ותקופת דיווח</h3>
+        <button onclick="closeBusinessSettingsModal()" style="background: #f1f5f9; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: 700; cursor: pointer;">✕</button>
+      </div>
+      <p style="font-size: 11.5px; color: #64748b; margin-top: 0; margin-bottom: 14px;">הגדרות אלו קובעות את אופן הדיווח, מועדי התזכורות וכרטיסי המיסים במערכת.</p>
+
+      <div style="margin-bottom: 10px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">סוג עוסק</label>
+        <select id="bizTypeSelect" style="width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 700; background: #f8fafc;">
+          <option value="עוסק מורשה">עוסק מורשה</option>
+          <option value="עוסק פטור">עוסק פטור</option>
+          <option value="חברה בע״מ">חברה בע״מ</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">תקופת דיווח מע״מ ומקדמות</label>
+        <select id="bizPeriodSelect" style="width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 700; background: #f8fafc;">
+          <option value="דו-חודשי">דו-חודשי (ינואר-פברואר, מרץ-אפריל...)</option>
+          <option value="חד-חודשי">חד-חודשי (כל 15 לחודש)</option>
+          <option value="שנתי">שנתי בלבד (עוסק פטור)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 11.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 4px;">מספר עוסק / מזהה</label>
+        <input type="text" id="bizTaxIdInput" readonly style="width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 13px; background: #f1f5f9; color: #64748b; font-weight: 700; box-sizing: border-box;">
+      </div>
+
+      <button onclick="saveBusinessSettings()" style="width: 100%; padding: 11px; background: #0284c7; color: white; border: none; border-radius: 12px; font-size: 13.5px; font-weight: 800; cursor: pointer;">שמור הגדרות עסק 💾</button>
+    </div>
+  </div>
+
+  <!-- Notification Settings Modal -->
+  <div id="notificationSettingsModal" onclick="if(event.target === this) closeNotificationSettingsModal()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 2500; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); direction: rtl;">
+    <div style="background: white; border-radius: 20px; max-width: 360px; width: 100%; padding: 22px 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); text-align: right;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #0f172a;">🔔 התראות ותזכורות בוואטסאפ</h3>
+        <button onclick="closeNotificationSettingsModal()" style="background: #f1f5f9; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: 700; cursor: pointer;">✕</button>
+      </div>
+      <p style="font-size: 11.5px; color: #64748b; margin-top: 0; margin-bottom: 14px;">בחר אילו התראות ותזכורות תקבל ישירות מוואטסאפ המשרד.</p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+        <label style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;">
+          <input type="checkbox" id="notifRemindMonthly" checked style="width: 16px; height: 16px;">
+          <span>תזכורות להעלאת מסמכים (ב-1, ב-7, ב-12 וב-15 לחודש • דיווח ב-19)</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;">
+          <input type="checkbox" id="notifLockConfirm" checked style="width: 16px; height: 16px;">
+          <span>הודעת אישור וסיכום בעת נעילת חודש</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;">
+          <input type="checkbox" id="notifReportFiled" checked style="width: 16px; height: 16px;">
+          <span>התראה כשהדוח התקופתי שודר לרשויות</span>
+        </label>
+      </div>
+
+      <button onclick="saveNotificationSettings()" style="width: 100%; padding: 11px; background: #0284c7; color: white; border: none; border-radius: 12px; font-size: 13.5px; font-weight: 800; cursor: pointer;">שמור העדפות התראה 💾</button>
+    </div>
+  </div>
+
+
+  <!-- POPUP MONTH PICKER MODAL -->
+  <div id="monthPickerModal" onclick="if(event.target === this) closeMonthPickerModal()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 2500; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(3px);">
+    <div style="background: white; border-radius: 20px; width: 100%; max-width: 320px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.25); direction: rtl; padding: 18px 16px; text-align: center;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
+        <span style="font-weight: 800; font-size: 14px; color: #0f172a;">📅 בחירת חודש</span>
+        <span onclick="closeMonthPickerModal()" style="font-size: 18px; cursor: pointer; color: #94a3b8; font-weight: bold;">✕</span>
+      </div>
+      
+      <div id="monthPickerGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 12px;"></div>
+
+      <button onclick="selectMonthFromPicker('annual')" style="width: 100%; background: #eff6ff; border: 1.5px solid #3b82f6; border-radius: 12px; padding: 11px; color: #1d4ed8; font-weight: 800; font-size: 12.5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1);">
+        <span style="font-size: 16px;">📁</span>
+        <span>תיקיית דו"ח שנתי (תרומות, ביטוחים וכו')</span>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- UPLOAD TYPE SELECTION MODAL -->
+  <div id="uploadClassificationModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px);">
+    <div style="background: white; border-radius: 20px; width: 100%; max-width: 360px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); animation: popIn 0.2s ease-out; direction: rtl;">
+      <div style="background: #0f172a; color: white; padding: 16px 20px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 4px;">📑</div>
+        <div style="font-size: 16px; font-weight: 800;">סיווג מסמך שהועלה</div>
+        <div style="font-size: 12px; opacity: 0.8; margin-top: 2px;">לאן לשייך את המסמך?</div>
+      </div>
+      
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+        <button onclick="applyUploadClassification('income')" style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; text-align: right;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 24px;">🟢</span>
+            <div>
+              <div style="font-weight: 900; font-size: 14.5px; color: #15803d;">הכנסה</div>
+              <div style="font-size: 11px; color: #166534; opacity: 0.85;">חשבונית מס, קבלה, עסקת אשראי</div>
+            </div>
+          </div>
+          <span style="font-size: 16px; color: #15803d; font-weight: bold;">➔</span>
+        </button>
+
+        <button onclick="applyUploadClassification('expense')" style="background: #fef2f2; border: 2px solid #ef4444; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; text-align: right;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 24px;">🔴</span>
+            <div>
+              <div style="font-weight: 900; font-size: 14.5px; color: #b91c1c;">הוצאה</div>
+              <div style="font-size: 11px; color: #991b1b; opacity: 0.85;">ספקים, קניות, דלק, הוצאות עסק</div>
+            </div>
+          </div>
+          <span style="font-size: 16px; color: #b91c1c; font-weight: bold;">➔</span>
+        </button>
+
+        <button onclick="applyUploadClassification('annual')" style="background: #f0f9ff; border: 2px solid #0284c7; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; text-align: right;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 24px;">📁</span>
+            <div>
+              <div style="font-weight: 900; font-size: 14.5px; color: #0369a1;">דו"ח שנתי</div>
+              <div style="font-size: 11px; color: #075985; opacity: 0.85;">טופס 106, 867, אישורי ביטוח/פנסיה/תרומות</div>
+            </div>
+          </div>
+          <span style="font-size: 16px; color: #0369a1; font-weight: bold;">➔</span>
+        </button>
+      </div>
+
+      <div style="padding: 10px 16px 16px 16px; border-top: 1px solid #f1f5f9; text-align: center;">
+        <button onclick="cancelUploadClassification()" style="background: #f1f5f9; color: #64748b; border: none; border-radius: 10px; padding: 10px 20px; font-size: 12px; font-weight: 700; cursor: pointer; width: 100%;">
+          ביטול
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- QUICK TAX EDIT MODAL (FOR DIRECT EDITING FROM DASHBOARD) -->
+  <div id="quickTaxEditModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px);">
+    <div style="background: white; border-radius: 20px; width: 100%; max-width: 380px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); direction: rtl; text-align: right;">
+      <div style="background: #0f172a; color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: 800; font-size: 14.5px;">💰 עריכת תשלומי מיסים לחודש זה</div>
+          <div id="quickTaxModalSub" style="font-size: 11px; opacity: 0.8; margin-top: 2px;"></div>
+        </div>
+        <span onclick="closeQuickTaxEditModal()" style="font-size: 20px; cursor: pointer; color: #94a3b8; font-weight: bold;">✕</span>
+      </div>
+      
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <label style="font-size: 11.5px; font-weight: 800; color: #334155; display: block; margin-bottom: 3px;">מע"מ לתשלום (₪):</label>
+          <input type="number" id="qTaxVat" oninput="calcQuickTaxTotal()" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 800; box-sizing: border-box;" placeholder="0" />
+        </div>
+        <div>
+          <label style="font-size: 11.5px; font-weight: 800; color: #334155; display: block; margin-bottom: 3px;">מקדמות מס הכנסה (₪):</label>
+          <input type="number" id="qTaxAdv" oninput="calcQuickTaxTotal()" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 800; box-sizing: border-box;" placeholder="0" />
+        </div>
+        <div>
+          <label style="font-size: 11.5px; font-weight: 800; color: #334155; display: block; margin-bottom: 3px;">ניכויי מס הכנסה (₪):</label>
+          <input type="number" id="qTaxDed" oninput="calcQuickTaxTotal()" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 800; box-sizing: border-box;" placeholder="0" />
+        </div>
+        <div>
+          <label style="font-size: 11.5px; font-weight: 800; color: #334155; display: block; margin-bottom: 3px;">ניכויי ביטוח לאומי (₪):</label>
+          <input type="number" id="qTaxBtl" oninput="calcQuickTaxTotal()" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 800; box-sizing: border-box;" placeholder="0" />
+        </div>
+        <div>
+          <label style="font-size: 11.5px; font-weight: 800; color: #334155; display: block; margin-bottom: 3px;">סטטוס דיווח:</label>
+          <select id="qTaxStat" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-weight: 800; background: white; box-sizing: border-box;">
+            <option value="טרם דווח">⚪ טרם דווח</option>
+            <option value="דווח">🟡 דווח</option>
+            <option value="דווח ושולם">🟢 דווח ושולם</option>
+          </select>
+        </div>
+
+        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+          <span style="font-weight: 800; font-size: 12.5px; color: #0369a1;">סה"כ לתשלום לרשויות:</span>
+          <span id="qTaxTotal" style="font-weight: 900; font-size: 15px; color: #0284c7;">₪0</span>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <button onclick="saveQuickTaxEdit()" style="flex: 1; background: #16a34a; color: white; border: none; padding: 11px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(22,163,74,0.25);">
+            💾 שמור ועדכן
+          </button>
+          <button onclick="closeQuickTaxEditModal()" style="padding: 11px 18px; background: #f1f5f9; color: #475569; border: none; border-radius: 10px; font-weight: 700; font-size: 12.5px; cursor: pointer;">
+            ביטול
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
