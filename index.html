@@ -1480,7 +1480,7 @@
       }
       if (!rawItem) return;
 
-      const fileName = (typeof rawItem === 'object' && rawItem) ? rawItem.name : rawItem;
+      const fileName = (typeof rawItem === "object" && rawItem) ? rawItem.name : rawItem;
       if (!fileName) return;
 
       const docList = getMonthDocList();
@@ -1488,34 +1488,34 @@
       if (currentDocGlobalIndex === -1) currentDocGlobalIndex = 0;
 
       // Update counter
-      const counterEl = document.getElementById('modalDocCounter');
+      const counterEl = document.getElementById("modalDocCounter");
       if (counterEl) {
-        counterEl.innerText = (currentDocGlobalIndex + 1) + ' מתוך ' + docList.length;
+        counterEl.innerText = (currentDocGlobalIndex + 1) + " מתוך " + docList.length;
       }
 
       // Update nav buttons opacity
-      const prevBtn = document.getElementById('modalPrevBtn');
-      const nextBtn = document.getElementById('modalNextBtn');
-      if (prevBtn) prevBtn.style.opacity = docList.length > 1 ? '1' : '0.35';
-      if (nextBtn) nextBtn.style.opacity = docList.length > 1 ? '1' : '0.35';
+      const prevBtn = document.getElementById("modalPrevBtn");
+      const nextBtn = document.getElementById("modalNextBtn");
+      if (prevBtn) prevBtn.style.opacity = docList.length > 1 ? "1" : "0.35";
+      if (nextBtn) nextBtn.style.opacity = docList.length > 1 ? "1" : "0.35";
 
       // Hide move panel if open
-      const movePanel = document.getElementById('moveDocPanel');
-      if (movePanel) movePanel.style.display = 'none';
+      const movePanel = document.getElementById("moveDocPanel");
+      if (movePanel) movePanel.style.display = "none";
 
-      document.getElementById('modalFileName').innerText = fileName;
-      const body = document.getElementById('modalBody');
-      
+      document.getElementById("modalFileName").innerText = fileName;
+      const body = document.getElementById("modalBody");
+
       let customUrl = fileUrlsMap[fileName] || null;
       if (!customUrl) {
         try {
-          customUrl = localStorage.getItem('doc_img_' + fileName);
+          customUrl = localStorage.getItem("doc_img_" + fileName);
           if (customUrl) fileUrlsMap[fileName] = customUrl;
         } catch(e) {}
       }
       if (!customUrl) {
         try {
-          const r = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+          const r = await fetch("data.json?t=" + Date.now(), { cache: "no-store" });
           if (r.ok) {
             const dj = await r.json();
             if (dj && dj._fileUrlsMap && dj._fileUrlsMap[fileName]) {
@@ -1526,80 +1526,78 @@
         } catch(e) {}
       }
 
-      const heightVal = isModalFullscreen ? 'calc(92vh - 175px)' : '350px';
+      const heightVal = isModalFullscreen ? "calc(92vh - 175px)" : "350px";
+      const isImage = /\.(jpe?g|png|webp|gif|bmp)$/i.test(fileName);
+      const localServerUrl = "files/" + encodeURIComponent(fileName);
 
-      if (customUrl) {
-        activeFileUrl = customUrl;
-        const embedUrl = customUrl.replace('/view?usp=drivesdk', '/preview');
-        const isDrive = customUrl.includes('drive.google.com');
-        const openBtnHtml = isDrive 
-          ? '<div style="margin-bottom: 12px;"><a href="' + customUrl + '" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 14px; background: #0284c7; color: white; border-radius: 14px; font-weight: 800; font-size: 13.5px; text-decoration: none; box-shadow: 0 4px 12px rgba(2,132,199,0.25);"><span>📂 פתח קובץ מלא ב-Google Drive ➔</span></a></div>'
-          : '';
+      let driveId = null;
+      if (customUrl && customUrl.includes("/d/")) {
+        const m = customUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (m && m[1]) driveId = m[1];
+      }
+      const directGoogleImg = driveId ? ("https://lh3.googleusercontent.com/d/" + driveId) : null;
 
-        let localImg = null;
-
-        // 1. Check if we already have an active blob URL
-        if (fileUrlsMap[fileName] && fileUrlsMap[fileName].startsWith('blob:')) {
-          localImg = fileUrlsMap[fileName];
-        }
-
-        // 2. Retrieve binary file/blob from IndexedDB and create fresh blob URL
-        if (!localImg) {
+      let localBlob = null;
+      if (fileUrlsMap[fileName] && (fileUrlsMap[fileName].startsWith("blob:") || fileUrlsMap[fileName].startsWith("data:"))) {
+        localBlob = fileUrlsMap[fileName];
+      }
+      if (!localBlob) {
+        try {
           const storedBlob = await getImageBlob(fileName);
           if (storedBlob) {
-            if (storedBlob instanceof Blob || (typeof storedBlob === 'object' && storedBlob.size)) {
-              localImg = URL.createObjectURL(storedBlob);
-              fileUrlsMap[fileName] = localImg;
-            } else if (typeof storedBlob === 'string') {
-              localImg = storedBlob;
+            if (storedBlob instanceof Blob || (typeof storedBlob === "object" && storedBlob.size)) {
+              localBlob = URL.createObjectURL(storedBlob);
+              fileUrlsMap[fileName] = localBlob;
+            } else if (typeof storedBlob === "string") {
+              localBlob = storedBlob;
             }
           }
-        }
+        } catch(e) {}
+      }
 
-        // 3. Fallback to fileUrlsMap if drive link or other
-        if (!localImg) {
-          localImg = fileUrlsMap[fileName] || null;
-        }
+      const navBtnsHtml = `
+        <div style="display: flex; gap: 10px; margin-top: 14px; margin-bottom: 6px;">
+          <button onclick="navDoc(-1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+            <span>▶</span> מסמך קודם
+          </button>
+          <button onclick="navDoc(1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+            מסמך הבא <span>◀</span>
+          </button>
+        </div>
+      `;
 
-        let viewerHtml = '';
-        if (localImg && (localImg.startsWith('data:image') || localImg.startsWith('blob:'))) {
-          viewerHtml = '<div style="display: flex; justify-content: center; align-items: center; min-height: 260px; height: ' + (isModalFullscreen ? 'calc(92vh - 175px)' : 'auto') + '; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; padding: 6px;"><img src="' + localImg + '" alt="' + fileName + '" style="max-width: 100%; max-height: ' + heightVal + '; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);"></div>';
-        } else if (isDrive) {
-          viewerHtml = '<div style="width: 100%; min-height: 300px; height: ' + heightVal + '; border-radius: 12px; border: 1.5px solid #cbd5e1; overflow: hidden; background: white;"><iframe src="' + embedUrl + '" style="width: 100%; height: 100%; min-height: 300px; border: none; background: white;" allow="autoplay"></iframe></div>';
-        } else {
-          viewerHtml = '<div style="display: flex; justify-content: center; align-items: center; min-height: 260px; height: ' + (isModalFullscreen ? 'calc(92vh - 175px)' : 'auto') + '; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; padding: 6px;"><img src="' + customUrl + '" alt="' + fileName + '" style="max-width: 100%; max-height: ' + heightVal + '; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);"></div>';
-        }
+      if (isImage) {
+        activeFileUrl = customUrl || localServerUrl;
+        const topBtnUrl = customUrl || (window.location.origin + "/" + localServerUrl);
+        const topBtnText = customUrl ? "📂 פתח קובץ מלא ב-Google Drive ➔" : "🔍 פתח תמונה בגודל מלא ➔";
+        const openBtnHtml = `<div style="margin-bottom: 12px;"><a href="${topBtnUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 14px; background: #0284c7; color: white; border-radius: 14px; font-weight: 800; font-size: 13.5px; text-decoration: none; box-shadow: 0 4px 12px rgba(2,132,199,0.25);"><span>${topBtnText}</span></a></div>`;
 
-        const navBtnsHtml = `
-          <div style="display: flex; gap: 10px; margin-top: 14px; margin-bottom: 6px;">
-            <button onclick="navDoc(-1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
-              <span>▶</span> מסמך קודם
-            </button>
-            <button onclick="navDoc(1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
-              מסמך הבא <span>◀</span>
-            </button>
+        const primarySrc = localBlob || directGoogleImg || localServerUrl;
+        const viewerHtml = `
+          <div style="display: flex; justify-content: center; align-items: center; min-height: 280px; height: ${heightVal}; background: #0f172a; border-radius: 14px; overflow: hidden; padding: 6px; border: 1.5px solid #334155;">
+            <img src="${primarySrc}" onerror="if(this.src.indexOf('files/') === -1) this.src='${localServerUrl}';" alt="${fileName}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;">
           </div>
         `;
         body.innerHTML = openBtnHtml + viewerHtml + navBtnsHtml;
-      } else {
-        // Check IndexedDB before falling back to placeholder
-        const storedBlob = await getImageBlob(fileName);
-        if (storedBlob) {
-          const localImg = (typeof storedBlob === 'string') ? storedBlob : URL.createObjectURL(storedBlob);
-          fileUrlsMap[fileName] = localImg;
-          const openBtnHtml = '<div style="margin-bottom: 12px;"><a href="' + localImg + '" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 14px; background: #0284c7; color: white; border-radius: 14px; font-weight: 800; font-size: 13.5px; text-decoration: none; box-shadow: 0 4px 12px rgba(2,132,199,0.25);"><span>🔍 הצג תמונה בגודל מלא ➔</span></a></div>';
-          const viewerHtml = '<div style="display: flex; justify-content: center; align-items: center; min-height: 260px; height: ' + (isModalFullscreen ? 'calc(92vh - 175px)' : 'auto') + '; background: #f8fafc; border-radius: 12px; border: 1.5px solid #cbd5e1; overflow: hidden; padding: 6px;"><img src="' + localImg + '" alt="' + fileName + '" style="max-width: 100%; max-height: ' + heightVal + '; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);"></div>';
-          const navBtnsHtml = `
-            <div style="display: flex; gap: 10px; margin-top: 14px; margin-bottom: 6px;">
-              <button onclick="navDoc(-1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;"><span>▶</span> מסמך קודם</button>
-              <button onclick="navDoc(1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">מסמך הבא <span>◀</span></button>
-            </div>
-          `;
-          body.innerHTML = openBtnHtml + viewerHtml + navBtnsHtml;
-          return;
-        }
+      } else if (customUrl) {
+        activeFileUrl = customUrl;
+        const embedUrl = customUrl.replace("/view?usp=drivesdk", "/preview");
+        const isDrive = customUrl.includes("drive.google.com");
+        const openBtnHtml = isDrive 
+          ? `<div style="margin-bottom: 12px;"><a href="${customUrl}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 14px; background: #0284c7; color: white; border-radius: 14px; font-weight: 800; font-size: 13.5px; text-decoration: none; box-shadow: 0 4px 12px rgba(2,132,199,0.25);"><span>📂 פתח קובץ מלא ב-Google Drive ➔</span></a></div>`
+          : "";
 
-        const driveSearchUrl = 'https://drive.google.com/drive/u/0/search?q=' + encodeURIComponent(fileName);
+        let viewerHtml = "";
+        if (localBlob) {
+          viewerHtml = `<div style="width: 100%; min-height: 300px; height: ${heightVal}; border-radius: 12px; border: 1.5px solid #cbd5e1; overflow: hidden; background: white;"><iframe src="${localBlob}" style="width: 100%; height: 100%; min-height: 300px; border: none; background: white;"></iframe></div>`;
+        } else if (isDrive) {
+          viewerHtml = `<div style="width: 100%; min-height: 300px; height: ${heightVal}; border-radius: 12px; border: 1.5px solid #cbd5e1; overflow: hidden; background: white;"><iframe src="${embedUrl}" style="width: 100%; height: 100%; min-height: 300px; border: none; background: white;" allow="autoplay"></iframe></div>`;
+        } else {
+          viewerHtml = `<div style="width: 100%; min-height: 300px; height: ${heightVal}; border-radius: 12px; border: 1.5px solid #cbd5e1; overflow: hidden; background: white;"><iframe src="${customUrl}" style="width: 100%; height: 100%; min-height: 300px; border: none; background: white;"></iframe></div>`;
+        }
+        body.innerHTML = openBtnHtml + viewerHtml + navBtnsHtml;
+      } else {
+        const driveSearchUrl = "https://drive.google.com/drive/u/0/search?q=" + encodeURIComponent(fileName);
         activeFileUrl = driveSearchUrl;
         body.innerHTML = `
           <div style="margin-bottom: 12px;">
@@ -1612,22 +1610,15 @@
             <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 4px; word-break: break-all;">${fileName}</div>
             <div style="font-size: 12px; color: #16a34a; font-weight: 800; margin-bottom: 12px;">✓ הקובץ מאומת ושמור בתיקיית הלקוח ב-Google Drive</div>
             <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; text-align: right; font-size: 12px; line-height: 1.8;">
-              <div><strong>סוג מסמך:</strong> ${type === 'income' ? '<span style="color:#16a34a; font-weight:800;">🟢 הכנסה (חשבונית/קבלה)</span>' : '<span style="color:#dc2626; font-weight:800;">🔴 הוצאה (חשבונית ספק)</span>'}</div>
-              <div><strong>תקופה:</strong> חודש ${currentMonth} – ${MONTHS[currentMonth - 1] || ''} ${currentYear}</div>
+              <div><strong>סוג מסמך:</strong> ${type === "income" ? "<span style='color:#16a34a; font-weight:800;'>🟢 הכנסה (חשבונית/קבלה)</span>" : "<span style='color:#dc2626; font-weight:800;'>🔴 הוצאה (חשבונית ספק)</span>"}</div>
+              <div><strong>תקופה:</strong> חודש ${currentMonth} – ${MONTHS[currentMonth - 1] || ""} ${currentYear}</div>
             </div>
           </div>
-          <div style="display: flex; gap: 10px; margin-top: 14px; margin-bottom: 6px;">
-            <button onclick="navDoc(-1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-              <span>▶</span> מסמך קודם
-            </button>
-            <button onclick="navDoc(1)" style="flex: 1; padding: 11px; background: #0f172a; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-              מסמך הבא <span>◀</span>
-            </button>
-          </div>
+          ${navBtnsHtml}
         `;
       }
 
-      document.getElementById('previewModal').style.display = 'flex';
+      document.getElementById("previewModal").style.display = "flex";
     }
 
     function toggleModalFullscreen() {
