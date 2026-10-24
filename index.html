@@ -281,7 +281,10 @@
       <!-- CLIENT HEADER BAR WITH NAME AND 3 DOTS -->
       <div class="client-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; margin-bottom: 14px;">
         <div style="font-size: 17px; font-weight: 800; color: #0f172a;" id="clientNameHeader">שלום, שמעיה מוישי 👋</div>
-        <button onclick="toggleSideMenu()" style="width: 42px; height: 42px; border-radius: 14px; background: #f1f5f9; border: 1.5px solid #cbd5e1; font-size: 22px; font-weight: 900; color: #0f172a; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);" title="תפריט אפשרויות">⋮</button>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button onclick="manualRefreshApp()" id="btnManualRefresh" style="width: 42px; height: 42px; border-radius: 14px; background: #f0fdf4; border: 1.5px solid #86efac; font-size: 18px; color: #16a34a; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.4s ease;" title="רענן וסנכרן נתונים">🔄</button>
+          <button onclick="toggleSideMenu()" style="width: 42px; height: 42px; border-radius: 14px; background: #f1f5f9; border: 1.5px solid #cbd5e1; font-size: 22px; font-weight: 900; color: #0f172a; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);" title="תפריט אפשרויות">⋮</button>
+        </div>
       </div>
 
       <!-- AUTOMATIC 1-CLICK APP INSTALL BANNER -->
@@ -2227,6 +2230,32 @@
         closeChangePasswordModal();
         showToast('הסיסמה עודכנה בהצלחה! 🔑');
       }
+    }
+
+    
+    async function manualRefreshApp() {
+      const btn = document.getElementById("btnManualRefresh");
+      if (btn) btn.style.transform = "rotate(360deg)";
+      showToast("מרענן ומסנכרן נתונים... 🔄");
+      try {
+        localStorage.removeItem("portal_clients_data");
+        const res = await fetch("data.json?t=" + Date.now(), { cache: "no-store" });
+        if (res.ok) {
+          const freshClients = await res.json();
+          if (freshClients && typeof freshClients === "object") {
+            Object.assign(CLIENTS, freshClients);
+            if (currentClientName && CLIENTS[currentClientName]) {
+              data = CLIENTS[currentClientName].data;
+            }
+          }
+        }
+      } catch(e) {}
+      saveData();
+      updateView();
+      updateTaxView();
+      setTimeout(function() {
+        window.location.reload();
+      }, 350);
     }
 
     function toggleSideMenu() {
