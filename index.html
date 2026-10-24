@@ -503,10 +503,28 @@
         const savedClients = localStorage.getItem('portal_clients_data');
         if (savedClients) {
           const parsed = JSON.parse(savedClients);
-          for (const [cn, cObj] of Object.entries(parsed)) {
-            if (CLIENTS[cn]) {
-              if (cObj.data) CLIENTS[cn].data = cObj.data;
-              if (cObj.taxes) CLIENTS[cn].taxes = cObj.taxes;
+          for (const cKey of Object.keys(CLIENTS)) {
+            if (parsed[cKey] && parsed[cKey].data) {
+              const codeData = CLIENTS[cKey].data;
+              const localData = parsed[cKey].data;
+              for (const yr of Object.keys(codeData)) {
+                if (!localData[yr]) localData[yr] = codeData[yr];
+                else {
+                  for (const m of Object.keys(codeData[yr])) {
+                    if (!localData[yr][m]) localData[yr][m] = codeData[yr][m];
+                    else if (typeof codeData[yr][m] === 'object') {
+                      ['income', 'expense'].forEach(function(type) {
+                        const codeFiles = (codeData[yr][m] && codeData[yr][m][type]) || [];
+                        const localFiles = (localData[yr][m] && localData[yr][m][type]) || [];
+                        codeFiles.forEach(function(f) {
+                          if (!localFiles.includes(f)) localFiles.unshift(f);
+                        });
+                        localData[yr][m][type] = localFiles;
+                      });
+                    }
+                  }
+                }
+              }
             }
           }
           if (parsed[matchedClient] && parsed[matchedClient].data) {
