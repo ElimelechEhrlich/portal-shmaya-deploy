@@ -2235,7 +2235,6 @@
       if (btn) btn.style.transform = "rotate(360deg)";
       showToast("מרענן ומסנכרן נתונים... 🔄");
       try {
-        localStorage.removeItem("portal_clients_data");
         const res = await fetch("data.json?t=" + Date.now(), { cache: "no-store" });
         if (res.ok) {
           const freshClients = await res.json();
@@ -2251,8 +2250,9 @@
       updateView();
       updateTaxView();
       setTimeout(function() {
-        window.location.reload();
-      }, 350);
+        if (btn) btn.style.transform = "rotate(0deg)";
+        showToast("הנתונים סונכרנו בהצלחה! ✅");
+      }, 400);
     }
 
     function toggleSideMenu() {
