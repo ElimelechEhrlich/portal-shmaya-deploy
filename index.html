@@ -898,6 +898,9 @@
         if (!res.ok) return;
         const freshClients = await res.json();
         if (!freshClients || typeof freshClients !== 'object') return;
+        if (freshClients._fileUrlsMap) {
+          Object.assign(fileUrlsMap, freshClients._fileUrlsMap);
+        }
 
         if (!currentClientName || !CLIENTS[currentClientName]) return;
         const serverClient = freshClients[currentClientName];
@@ -1508,6 +1511,18 @@
         try {
           customUrl = localStorage.getItem('doc_img_' + fileName);
           if (customUrl) fileUrlsMap[fileName] = customUrl;
+        } catch(e) {}
+      }
+      if (!customUrl) {
+        try {
+          const r = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+          if (r.ok) {
+            const dj = await r.json();
+            if (dj && dj._fileUrlsMap && dj._fileUrlsMap[fileName]) {
+              customUrl = dj._fileUrlsMap[fileName];
+              fileUrlsMap[fileName] = customUrl;
+            }
+          }
         } catch(e) {}
       }
 
@@ -2235,6 +2250,9 @@
         if (res.ok) {
           const freshClients = await res.json();
           if (freshClients && typeof freshClients === "object") {
+            if (freshClients._fileUrlsMap) {
+              Object.assign(fileUrlsMap, freshClients._fileUrlsMap);
+            }
             Object.assign(CLIENTS, freshClients);
             if (currentClientName && CLIENTS[currentClientName]) {
               data = CLIENTS[currentClientName].data;
