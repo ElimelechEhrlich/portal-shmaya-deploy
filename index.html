@@ -5,6 +5,10 @@
   <link rel="manifest" href="manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="מוישי שמעיה">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="theme-color" content="#0f172a">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>מוישי שמעיה - העלאת מסמכים</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -411,13 +415,67 @@
 
   <script>
 
+    // Service Worker Registration for PWA 1-Click Install
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch((err) => {
+          console.log('SW registration error:', err);
+        });
+      });
+    }
+
+    // PWA Install Prompt handling
     window.deferredPrompt = null;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       window.deferredPrompt = e;
-      const b = document.getElementById('autoInstallBanner');
-      if (b) b.style.display = 'flex';
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      if (!isStandalone) {
+        const b = document.getElementById('autoInstallBanner');
+        if (b) b.style.display = 'flex';
+      }
     });
+
+    window.addEventListener('appinstalled', () => {
+      window.deferredPrompt = null;
+      const b = document.getElementById('autoInstallBanner');
+      if (b) b.style.display = 'none';
+      if (typeof showToast === 'function') showToast('האפליקציה הותקנה בהצלחה במסך הבית! 🎉');
+    });
+
+    async function triggerAutoInstall() {
+      if (window.deferredPrompt) {
+        try {
+          window.deferredPrompt.prompt();
+          const choiceResult = await window.deferredPrompt.userChoice;
+          if (choiceResult && choiceResult.outcome === 'accepted') {
+            const b = document.getElementById('autoInstallBanner');
+            if (b) b.style.display = 'none';
+            if (typeof showToast === 'function') showToast('האפליקציה נוספה למסך הבית! 🎉');
+          }
+        } catch (err) {
+          console.error('Install prompt error:', err);
+          openPwaGuideModal();
+        }
+        window.deferredPrompt = null;
+      } else {
+        openPwaGuideModal();
+      }
+    }
+
+    function installPwa() {
+      triggerAutoInstall();
+    }
+
+    function openPwaGuideModal() {
+      const m = document.getElementById('pwaGuideModal');
+      if (m) m.style.display = 'flex';
+    }
+
+    function closePwaGuideModal() {
+      const m = document.getElementById('pwaGuideModal');
+      if (m) m.style.display = 'none';
+    }
 
     const MONTHS = [
       'חודש 1 — ינואר', 'חודש 2 — פברואר', 'חודש 3 — מרץ', 'חודש 4 — אפריל',
@@ -2117,13 +2175,7 @@
     }
 
     
-    let deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      const b = document.getElementById('pwaBanner');
-      if (b) b.style.display = 'flex';
-    });
+
 
     
     function downloadOfficeDoc(name) {
@@ -3269,6 +3321,49 @@
           </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- PWA INSTALL GUIDE MODAL -->
+  <div id="pwaGuideModal" onclick="if(event.target === this) closePwaGuideModal()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 3000; align-items: center; justify-content: center; padding: 18px; backdrop-filter: blur(4px); direction: rtl;">
+    <div style="background: white; border-radius: 24px; max-width: 390px; width: 100%; padding: 24px 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); text-align: right; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 24px;">📲</span>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #0f172a;">התקנת האפליקציה במסך הבית</h3>
+        </div>
+        <button onclick="closePwaGuideModal()" style="background: #f1f5f9; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 14px; font-weight: 700; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+      </div>
+
+      <div style="font-size: 12.5px; color: #475569; line-height: 1.5; margin-bottom: 16px;">
+        כדי להשתמש בפורטל כאפליקציה מלאה ונוחה עם גישה ישירה ממסך הבית:
+      </div>
+
+      <!-- Android / Chrome -->
+      <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; margin-bottom: 12px;">
+        <div style="font-size: 13px; font-weight: 800; color: #0284c7; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          <span>🤖</span> אנדרואיד (דפדפן Chrome):
+        </div>
+        <ol style="margin: 0; padding-right: 18px; font-size: 12px; color: #334155; line-height: 1.6;">
+          <li>לחצו על תפריט הדפדפן (<strong>3 נקודות ⋮</strong> למעלה).</li>
+          <li>בחרו ב-<strong>"התקנת האפליקציה"</strong> או <strong>"הוספה למסך הבית"</strong>.</li>
+          <li>אשרו את ההוספה.</li>
+        </ol>
+      </div>
+
+      <!-- iPhone / Safari -->
+      <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; margin-bottom: 16px;">
+        <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          <span>🍏</span> אייפון (דפדפן Safari):
+        </div>
+        <ol style="margin: 0; padding-right: 18px; font-size: 12px; color: #334155; line-height: 1.6;">
+          <li>לחצו על כפתור <strong>השיתוף</strong> בתחתית המסך (ריבוע עם חץ ⬆️).</li>
+          <li>גללו למטה ובחרו <strong>"הוסף למסך הבית"</strong> (Add to Home Screen).</li>
+          <li>לחצו <strong>"הוסף"</strong> בפינה העליונה.</li>
+        </ol>
+      </div>
+
+      <button onclick="closePwaGuideModal()" style="width: 100%; padding: 12px; border-radius: 12px; background: #0284c7; color: white; border: none; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">הבנתי, תודה!</button>
     </div>
   </div>
 
