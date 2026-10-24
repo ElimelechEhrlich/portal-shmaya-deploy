@@ -686,6 +686,30 @@
         const saved = localStorage.getItem('portal_clients_data');
         if (saved) {
           const parsed = JSON.parse(saved);
+          for (const cKey of Object.keys(CLIENTS)) {
+            if (parsed[cKey] && parsed[cKey].data) {
+              const codeData = CLIENTS[cKey].data;
+              const localData = parsed[cKey].data;
+              for (const yr of Object.keys(codeData)) {
+                if (!localData[yr]) localData[yr] = codeData[yr];
+                else {
+                  for (const m of Object.keys(codeData[yr])) {
+                    if (!localData[yr][m]) localData[yr][m] = codeData[yr][m];
+                    else if (typeof codeData[yr][m] === 'object') {
+                      ['income', 'expense'].forEach(function(type) {
+                        const codeFiles = (codeData[yr][m] && codeData[yr][m][type]) || [];
+                        const localFiles = (localData[yr][m] && localData[yr][m][type]) || [];
+                        codeFiles.forEach(function(f) {
+                          if (!localFiles.includes(f)) localFiles.unshift(f);
+                        });
+                        localData[yr][m][type] = localFiles;
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          }
           Object.assign(CLIENTS, parsed);
           // Preserve annualDocs from code if parsed client lacked it
           for (const cKey of Object.keys(CLIENTS)) {
@@ -1341,6 +1365,7 @@
     let storedDriveUrls = {};
     try { storedDriveUrls = JSON.parse(localStorage.getItem('shemaya_drive_file_urls') || '{}'); } catch(e) {}
     let fileUrlsMap = Object.assign({
+  "הוצאה_25102026_0044.jpg": "https://drive.google.com/file/d/1VPyY2G_tPwRwqARg908hEmAl8Y4GMAUp/view?usp=drivesdk",
   "17927001635854964749994349306827.jpg": "https://drive.google.com/file/d/1-u7i_FhaPXyUysZyQkDv2qEKAzC1Sjev/view?usp=drivesdk",
   "17926999135255514894437509635649.jpg": "https://drive.google.com/file/d/1wtH6h4YMYNYBmFp-NvZ-NRa9s9T-u--S/view?usp=drivesdk",
   "test_auto_sync_drive.pdf": "https://drive.google.com/file/d/1IMoTqZz4nhMwwNM0YIxC4r7eIHvO9x-z/view?usp=drivesdk",
