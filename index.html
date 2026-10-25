@@ -1718,7 +1718,10 @@
       panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
     }
 
-    function moveDocToMonth(targetMonth) {
+    let isMovingDoc = false;
+
+    async function moveDocToMonth(targetMonth) {
+      if (isMovingDoc) return;
       if (targetMonth === currentMonth) {
         showToast('המסמך כבר נמצא בחודש זה.');
         return;
@@ -1728,21 +1731,24 @@
       const fileName = (mData[currentDocType] && mData[currentDocType][currentDocIndex]) ? mData[currentDocType][currentDocIndex] : null;
       if (!fileName) return;
 
-      // Remove from current month
-      mData[currentDocType].splice(currentDocIndex, 1);
+      const movePanel = document.getElementById('moveDocPanel');
+      if (movePanel) movePanel.style.display = 'none';
 
-      // Add to target month
-      if (!yrData[targetMonth]) yrData[targetMonth] = { income: [], expense: [] };
-      if (!yrData[targetMonth][currentDocType]) yrData[targetMonth][currentDocType] = [];
-      yrData[targetMonth][currentDocType].push(fileName);
+      isMovingDoc = true;
+      showToast('מעביר קובץ ב-Google Drive... ⏳');
 
-      // Trigger automatic background move in Google Drive
+      let dUrl = (typeof fileUrlsMap !== 'undefined' && fileUrlsMap[fileName]) ? fileUrlsMap[fileName] : '';
+      if (!dUrl) {
+        try {
+          let m = JSON.parse(localStorage.getItem('shemaya_drive_file_urls') || '{}');
+          if (m[fileName]) dUrl = m[fileName];
+        } catch(e) {}
+      }
+      const match = dUrl ? dUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) : null;
+      const fileId = (match && match[1]) ? match[1] : null;
+
       try {
-        const dUrl = (typeof fileUrlsMap !== 'undefined' && fileUrlsMap[fileName]) ? fileUrlsMap[fileName] : '';
-        const match = dUrl ? dUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) : null;
-        const fileId = (match && match[1]) ? match[1] : null;
-
-        fetch('/api/move', {
+        const resp = await fetch('/api/move', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1752,59 +1758,76 @@
             targetMonth: targetMonth,
             fromMonth: currentMonth
           })
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(res) {
-          if (res && res.ok && res.fileId) {
-            saveDriveFileUrl(fileName, 'https://drive.google.com/file/d/' + res.fileId + '/view?usp=drivesdk');
-          }
-        })
-        .catch(function(e) { console.error('Drive move error:', e); });
-      } catch(e) {}
+        });
 
-      saveData();
-      updateView();
-      showToast('המסמך הועבר בהצלחה לחודש ' + MONTHS[targetMonth - 1] + ' 📁');
+        const res = await resp.json().catch(function() { return null; });
 
-      const docList = getMonthDocList();
-      if (docList.length > 0) {
-        let nextIdx = currentDocGlobalIndex;
-        if (nextIdx >= docList.length) nextIdx = docList.length - 1;
-        const nextItem = docList[nextIdx];
-        viewFile(nextItem.type, nextItem.index);
-      } else {
-        closeModal();
+        if (!resp.ok || !res || res.ok === false || res.error) {
+          const errMsg = (res && res.error) ? (': ' + res.error) : '';
+          console.error('Drive move error:', res);
+          showToast('שגיאה: העברת הקובץ ב-Drive נכשלה ⚠️' + errMsg);
+          isMovingDoc = false;
+          return;
+        }
+
+        if (res.fileId) {
+          saveDriveFileUrl(fileName, 'https://drive.google.com/file/d/' + res.fileId + '/view?usp=drivesdk');
+        }
+
+        // Apply local data move only after Drive confirms success
+        mData[currentDocType].splice(currentDocIndex, 1);
+        if (!yrData[targetMonth]) yrData[targetMonth] = { income: [], expense: [] };
+        if (!yrData[targetMonth][currentDocType]) yrData[targetMonth][currentDocType] = [];
+        yrData[targetMonth][currentDocType].push(fileName);
+
+        saveData();
+        updateView();
+        showToast('הקובץ הועבר בהצלחה ב-Drive לחודש ' + MONTHS[targetMonth - 1] + ' ✅');
+
+        const docList = getMonthDocList();
+        if (docList.length > 0) {
+          let nextIdx = currentDocGlobalIndex;
+          if (nextIdx >= docList.length) nextIdx = docList.length - 1;
+          const nextItem = docList[nextIdx];
+          viewFile(nextItem.type, nextItem.index);
+        } else {
+          closeModal();
+        }
+      } catch (err) {
+        console.error('Drive move network error:', err);
+        showToast('שגיאת תקשורת: העברת הקובץ ב-Drive נכשלה ⚠️');
+      } finally {
+        isMovingDoc = false;
       }
     }
 
     let movedToAnnualSet = new Set(JSON.parse(localStorage.getItem('moved_to_annual') || '[]'));
 
-    function moveDocToAnnual() {
+    async function moveDocToAnnual() {
+      if (isMovingDoc) return;
       const yrData = data[currentYear] || {};
       const mData = yrData[currentMonth] || { income: [], expense: [] };
       const fileName = (mData[currentDocType] && mData[currentDocType][currentDocIndex]) ? mData[currentDocType][currentDocIndex] : null;
       if (!fileName) return;
 
-      movedToAnnualSet.add(fileName);
-      try { localStorage.setItem('moved_to_annual', JSON.stringify([...movedToAnnualSet])); } catch(e) {}
+      const movePanel = document.getElementById('moveDocPanel');
+      if (movePanel) movePanel.style.display = 'none';
 
-      mData[currentDocType].splice(currentDocIndex, 1);
+      isMovingDoc = true;
+      showToast('מעביר קובץ ב-Google Drive לתיקיית דוח שנתי... ⏳');
 
-      if (!yrData.annualDocs) yrData.annualDocs = [];
-      yrData.annualDocs.push({
-        name: fileName,
-        type: currentDocType,
-        fromMonth: currentMonth,
-        date: new Date().toLocaleDateString('he-IL')
-      });
+      let dUrl = (typeof fileUrlsMap !== 'undefined' && fileUrlsMap[fileName]) ? fileUrlsMap[fileName] : '';
+      if (!dUrl) {
+        try {
+          let m = JSON.parse(localStorage.getItem('shemaya_drive_file_urls') || '{}');
+          if (m[fileName]) dUrl = m[fileName];
+        } catch(e) {}
+      }
+      const match = dUrl ? dUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) : null;
+      const fileId = (match && match[1]) ? match[1] : null;
 
-      // Trigger automatic background move in Google Drive to Annual folder
       try {
-        const dUrl = (typeof fileUrlsMap !== 'undefined' && fileUrlsMap[fileName]) ? fileUrlsMap[fileName] : '';
-        const match = dUrl ? dUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) : null;
-        const fileId = (match && match[1]) ? match[1] : null;
-
-        fetch('/api/move', {
+        const resp = await fetch('/api/move', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1814,29 +1837,55 @@
             targetMonth: 'annual',
             fromMonth: currentMonth
           })
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(res) {
-          if (res && res.ok && res.fileId) {
-            saveDriveFileUrl(fileName, 'https://drive.google.com/file/d/' + res.fileId + '/view?usp=drivesdk');
-          }
-        })
-        .catch(function(e) { console.error('Drive move to annual error:', e); });
-      } catch(e) {}
+        });
 
-      saveData();
-      updateView();
-      updateAnnualDocsCount();
-      showToast('המסמך הועבר בהצלחה לתיקיית דוח שנתי 📑');
+        const res = await resp.json().catch(function() { return null; });
 
-      const docList = getMonthDocList();
-      if (docList.length > 0) {
-        let nextIdx = currentDocGlobalIndex;
-        if (nextIdx >= docList.length) nextIdx = docList.length - 1;
-        const nextItem = docList[nextIdx];
-        viewFile(nextItem.type, nextItem.index);
-      } else {
-        closeModal();
+        if (!resp.ok || !res || res.ok === false || res.error) {
+          const errMsg = (res && res.error) ? (': ' + res.error) : '';
+          console.error('Drive move to annual error:', res);
+          showToast('שגיאה: העברת הקובץ לדוח שנתי ב-Drive נכשלה ⚠️' + errMsg);
+          isMovingDoc = false;
+          return;
+        }
+
+        if (res.fileId) {
+          saveDriveFileUrl(fileName, 'https://drive.google.com/file/d/' + res.fileId + '/view?usp=drivesdk');
+        }
+
+        // Apply local data move only after Drive confirms success
+        movedToAnnualSet.add(fileName);
+        try { localStorage.setItem('moved_to_annual', JSON.stringify([...movedToAnnualSet])); } catch(e) {}
+
+        mData[currentDocType].splice(currentDocIndex, 1);
+
+        if (!yrData.annualDocs) yrData.annualDocs = [];
+        yrData.annualDocs.push({
+          name: fileName,
+          type: currentDocType,
+          fromMonth: currentMonth,
+          date: new Date().toLocaleDateString('he-IL')
+        });
+
+        saveData();
+        updateView();
+        updateAnnualDocsCount();
+        showToast('הקובץ הועבר בהצלחה ב-Drive לתיקיית דוח שנתי 📑✅');
+
+        const docList = getMonthDocList();
+        if (docList.length > 0) {
+          let nextIdx = currentDocGlobalIndex;
+          if (nextIdx >= docList.length) nextIdx = docList.length - 1;
+          const nextItem = docList[nextIdx];
+          viewFile(nextItem.type, nextItem.index);
+        } else {
+          closeModal();
+        }
+      } catch (err) {
+        console.error('Drive move to annual network error:', err);
+        showToast('שגיאת תקשורת: העברת הקובץ ב-Drive לדוח שנתי נכשלה ⚠️');
+      } finally {
+        isMovingDoc = false;
       }
     }
 
