@@ -292,9 +292,12 @@
       </div>
 
       <!-- AUTOMATIC 1-CLICK APP INSTALL BANNER -->
-      <div id="autoInstallBanner" style="display: none; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; padding: 10px 14px; border-radius: 16px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
-        <span style="font-size: 12px; font-weight: 800;">📲 התקן את האפליקציה במסך הבית</span>
-        <button onclick="triggerAutoInstall()" style="background: white; color: #0284c7; border: none; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 11.5px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">התקנה ➔</button>
+      <div id="autoInstallBanner" onclick="triggerAutoInstall()" style="display: none; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; padding: 12px 14px; border-radius: 16px; margin-bottom: 14px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3); cursor: pointer; user-select: none;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">📲</span>
+          <span style="font-size: 12.5px; font-weight: 800;">התקן את האפליקציה במסך הבית</span>
+        </div>
+        <button style="background: white; color: #0284c7; border: none; padding: 7px 14px; border-radius: 10px; font-weight: 800; font-size: 12px; pointer-events: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">התקנה ➔</button>
       </div>
 
       <!-- ROW 1: CONTROLS, UPLOAD BUTTONS & LOCK -->
