@@ -1238,6 +1238,10 @@
       pendingUploadedFiles = Array.from(files);
       event.target.value = '';
 
+      const monthLabel = (currentMonth === 'annual') ? ('דו"ח שנתי ' + currentYear) : (MONTHS[currentMonth - 1] + ' ' + currentYear);
+      const sub = document.getElementById('uploadClassificationSub');
+      if (sub) sub.innerText = 'שיוך עבור ' + monthLabel;
+
       const modal = document.getElementById('uploadClassificationModal');
       if (modal) modal.style.display = 'flex';
     }
@@ -1342,32 +1346,38 @@
       if (!data[currentYear]) data[currentYear] = {};
 
       const filesToUpload = Array.from(pendingUploadedFiles);
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const dStr = `${pad(now.getDate())}${pad(now.getMonth() + 1)}${now.getFullYear()}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 
       if (type === 'annual') {
         if (!data[currentYear].annualDocs) data[currentYear].annualDocs = [];
         for (let i = 0; i < filesToUpload.length; i++) {
           const file = filesToUpload[i];
+          let ext = '.jpg';
+          if (file.name && file.name.lastIndexOf('.') !== -1) {
+            ext = file.name.substring(file.name.lastIndexOf('.'));
+          }
+          const suffix = (filesToUpload.length > 1 ? ('_' + (i + 1)) : '');
+          const finalFileName = `שנתי_${currentYear}_${dStr}${suffix}${ext}`;
           data[currentYear].annualDocs.unshift({
-            name: file.name,
+            name: finalFileName,
             type: 'annual',
             fromMonth: targetMonth,
             date: new Date().toLocaleDateString('he-IL')
           });
           try {
             const blobUrl = URL.createObjectURL(file);
-            fileUrlsMap[file.name] = blobUrl;
-            saveImageBlob(file.name, file);
+            fileUrlsMap[finalFileName] = blobUrl;
+            saveImageBlob(finalFileName, file);
             const reader = new FileReader();
             reader.onload = function(e) {
               const b64 = e.target.result;
-              // Keep lightweight blobUrl
-              
-              // Trigger background upload to Google Drive
               fetch('/api/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  fileName: file.name,
+                  fileName: finalFileName,
                   fileData: b64,
                   clientName: currentClientName,
                   targetMonth: 'annual',
@@ -1377,7 +1387,7 @@
               })
               .then(function(r) { return r.json(); })
               .then(function(res) {
-                if (res && res.ok && res.driveUrl) saveDriveFileUrl(file.name, res.driveUrl);
+                if (res && res.ok && res.driveUrl) saveDriveFileUrl(finalFileName, res.driveUrl);
               })
               .catch(function(e) {});
             };
@@ -1392,20 +1402,27 @@
         if (!Array.isArray(data[currentYear][targetMonth][type])) {
           data[currentYear][targetMonth][type] = [];
         }
+        const typeLabel = (type === 'income') ? 'הכנסה' : 'הוצאה';
         for (let i = 0; i < filesToUpload.length; i++) {
           const file = filesToUpload[i];
-          data[currentYear][targetMonth][type].unshift(file.name);
+          let ext = '.jpg';
+          if (file.name && file.name.lastIndexOf('.') !== -1) {
+            ext = file.name.substring(file.name.lastIndexOf('.'));
+          }
+          const suffix = (filesToUpload.length > 1 ? ('_' + (i + 1)) : '');
+          const finalFileName = `${typeLabel}_חודש_${targetMonth}_${dStr}${suffix}${ext}`;
+          data[currentYear][targetMonth][type].unshift(finalFileName);
           try {
             const blobUrl = URL.createObjectURL(file);
-            fileUrlsMap[file.name] = blobUrl;
-            saveImageBlob(file.name, file);
+            fileUrlsMap[finalFileName] = blobUrl;
+            saveImageBlob(finalFileName, file);
             compressImageForUpload(file).then(function(b64) {
               if (!b64) return;
               fetch('/api/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  fileName: file.name,
+                  fileName: finalFileName,
                   fileData: b64,
                   clientName: currentClientName,
                   targetMonth: targetMonth,
@@ -1416,7 +1433,7 @@
               .then(function(r) { return r.json(); })
               .then(function(res) {
                 if (res && res.ok) {
-                  if (res.driveUrl) saveDriveFileUrl(file.name, res.driveUrl);
+                  if (res.driveUrl) saveDriveFileUrl(finalFileName, res.driveUrl);
                   showToast('הקובץ הועלה בהצלחה ל-Google Drive! ☁️');
                 }
               })
@@ -1426,8 +1443,6 @@
         }
         showToast('המסמך נקלט ונשלח לדרייב כ' + (type === 'income' ? 'הכנסה 🟢' : 'הוצאה 🔴') + '!');
       }
-
-// Removed duplicate empty upload loop
 
       saveData();
       updateView();
@@ -3308,7 +3323,7 @@
       <div style="background: #0f172a; color: white; padding: 16px 20px; text-align: center;">
         <div style="font-size: 24px; margin-bottom: 4px;">📑</div>
         <div style="font-size: 16px; font-weight: 800;">סיווג מסמך שהועלה</div>
-        <div style="font-size: 12px; opacity: 0.8; margin-top: 2px;">לאן לשייך את המסמך?</div>
+        <div id="uploadClassificationSub" style="font-size: 13px; font-weight: 800; color: #38bdf8; margin-top: 3px;">לאן לשייך את המסמך?</div>
       </div>
       
       <div style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
