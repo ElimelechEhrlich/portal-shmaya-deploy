@@ -1807,7 +1807,11 @@
 
         saveData();
         updateView();
-        showToast('הקובץ הועבר בהצלחה ב-Drive לחודש ' + MONTHS[targetMonth - 1] + ' ✅');
+        if (res && res.alreadyThere) {
+          showToast('המסמך שויך לחודש ' + targetMonth + ' ✅ (ב-Drive כבר שמור בתיקייה הדו-חודשית המשותפת)', 4500);
+        } else {
+          showToast('הקובץ הועבר בהצלחה ב-Drive לחודש ' + MONTHS[targetMonth - 1] + ' ✅', 3500);
+        }
 
         const docList = getMonthDocList();
         if (docList.length > 0) {
