@@ -1718,6 +1718,31 @@
       panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
     }
 
+    function formatDriveError(res, resp, fileId, fileName) {
+      if (!fileId && !fileName) return 'מזהה ושם הקובץ חסרים';
+      if (!resp || !resp.ok) {
+        if (resp && resp.status === 404) return 'כתובת השרת לא נמצאה (404)';
+        if (resp && resp.status >= 500) return 'תקלת שרת בעת הפנייה לדרייב (' + resp.status + ')';
+        return 'שגיאת תקשורת מול השרת';
+      }
+      if (!res) return 'השרת החזיר תשובה ריקה';
+      const raw = (res.error || res.message || res.details || '').toString();
+      if (!raw) return 'שגיאה לא מוגדרת מהשרת';
+      if (raw.includes('File not found') || raw.includes('notFound') || raw.includes('404')) {
+        return 'הקובץ לא אותר ב-Google Drive (ייתכן שנמחק או הועבר)';
+      }
+      if (raw.includes('permission') || raw.includes('Permission') || raw.includes('accessDenied') || raw.includes('403')) {
+        return 'אין הרשאת עריכה לקובץ זה ב-Google Drive';
+      }
+      if (raw.includes('quota') || raw.includes('rateLimit')) {
+        return 'עומס פניות מול Google Drive, נסה שוב בעוד דקה';
+      }
+      if (raw.includes('ToolError')) {
+        return 'פעולת Google Drive נכשלה בשרת';
+      }
+      return raw;
+    }
+
     let isMovingDoc = false;
 
     async function moveDocToMonth(targetMonth) {
@@ -1763,9 +1788,9 @@
         const res = await resp.json().catch(function() { return null; });
 
         if (!resp.ok || !res || res.ok === false || res.error) {
-          const errMsg = (res && res.error) ? (': ' + res.error) : '';
-          console.error('Drive move error:', res);
-          showToast('שגיאה: העברת הקובץ ב-Drive נכשלה ⚠️' + errMsg);
+          const reason = formatDriveError(res, resp, fileId, fileName);
+          console.error('Drive move error:', res, reason);
+          showToast('העברה נכשלה: ' + reason + ' ⚠️', 5500);
           isMovingDoc = false;
           return;
         }
@@ -1842,9 +1867,9 @@
         const res = await resp.json().catch(function() { return null; });
 
         if (!resp.ok || !res || res.ok === false || res.error) {
-          const errMsg = (res && res.error) ? (': ' + res.error) : '';
-          console.error('Drive move to annual error:', res);
-          showToast('שגיאה: העברת הקובץ לדוח שנתי ב-Drive נכשלה ⚠️' + errMsg);
+          const reason = formatDriveError(res, resp, fileId, fileName);
+          console.error('Drive move to annual error:', res, reason);
+          showToast('העברה לדוח שנתי נכשלה: ' + reason + ' ⚠️', 5500);
           isMovingDoc = false;
           return;
         }
@@ -2187,11 +2212,13 @@
       showToast('המסמך הוסר מהאתר! 🗑️ (שמור בדרייב)');
     }
 
-    function showToast(msg) {
+    function showToast(msg, duration) {
       const t = document.getElementById('toast');
+      if (!t) return;
       t.innerText = msg;
       t.classList.add('show');
-      setTimeout(() => { t.classList.remove('show'); }, 3000);
+      if (window._toastTimer) clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => { t.classList.remove('show'); }, duration || 3200);
     }
 
     function exportExcel() {
